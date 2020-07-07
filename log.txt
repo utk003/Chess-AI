@@ -1,0 +1,25 @@
+July 3, 2020
+------------
+This is my first push, mainly because I just never got around to doing it before.
+
+The entire chess game is pretty much done. There are a few changes I will be making, but nothing major.
+
+Currently, human, random, minimax, and alpha-beta-pruning players work. The Monte Carlo Sim player is in progress, but there are some major memory leaks in the code right now that means the program leaks roughly 180MB of memory every time tthe MCTS player makes a move.
+
+Overall, the project is moving along well, but this memory leak is pretty major, and I'm struggling to find it.
+
+
+
+July 6, 2020
+------------
+This is my second push. Since the last one, quite a lot has happened.
+
+Most importantly, I found all of the memory leaks in the program. In total, there were quite a few (6 or 7 different leaks to be more precise). A couple stemmed from a misunderstanding on my end about how the C++ standard library containers clear memory when emptied. Another resulted from a misunderstanding on my end about how arrays work in C++. I ended up resolving this issue by just replacing all of the pointer arrays with vectors, which works much better anyways. I also had a few leaks caused by sloppy code when I was writing a patch for another issue. Those took a while to find, but I eventually fixed those as well.
+
+As a result of the memory leak fixes, the MCTS player now functions perfectly fine, and can now be played. However, the simulation algorithm still needs some work, as it currently plays even worse than the Random player.
+
+Also, because all of the memory issues are now resolved, I am finally starting work on the core of this entire project:  The AI player. This will be fun.
+
+Beyond that, there isn't much else to say. I fixed a few other bugs regarding closing the game prematurely and excessive threading. The only "major" issue is more of an inconvience: The game occasionally flickers randomly, and the cause is currently unknown. However, that isn't really that significant, at least for now.
+
+Overall, I have made some decent progress in the past few days. A little bit more to implement the networks, and then I'm pretty much done (except for training of course).

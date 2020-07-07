@@ -25,18 +25,24 @@ tree::Node::Node(float prior) {
 }
 
 tree::Node::~Node() {
+  Node* node;
+  for (std::map<game::Move, Node*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+    node = _children[it -> first];
+    _children[it -> first] = nullptr;
+    delete node;
+  }
   _children.clear();
 }
 
 // Monte Carlo Tree Search class
-std::pair<game::Move, tree::Node*> tree::MCTS::run_mcts(game::Game* game, network::Decider* move_ranker) {
+std::pair<game::Move, tree::Node*> tree::MCTS::run_mcts(game::Game* game, network::Decider* move_ranker) {  
   Node* root = new Node();
   Node* node = nullptr;
   game::Game* clone = game -> clone();
   std::vector<Node*> searchPath;
   expand_node(root, clone, move_ranker);
   add_dirichlet_noise(root);
-  
+
   float value;
 
   int i;
@@ -46,14 +52,11 @@ std::pair<game::Move, tree::Node*> tree::MCTS::run_mcts(game::Game* game, networ
     clone = game -> clone();
     searchPath = {root};
 
-    int c = 0;
-
     while (node -> expanded()) {
       std::pair<game::Move, Node*> optimal = select_optimal_child(node);
       node = optimal.second;
       assert(clone -> processMove(optimal.first)); // must complete processing -> success
       searchPath.push_back(node);
-      ++c;
     }
 
     value = expand_node(node, clone, move_ranker);
@@ -125,7 +128,6 @@ float tree::MCTS::score_move(Node* parent, Node* child) {
 
 float tree::MCTS::expand_node(tree::Node* node, game::Game* game, network::Decider* move_ranker) {
   std::pair<float, std::map<game::Move, float>> prediction = move_ranker -> prediction(game);
-
   node -> _color_to_play = game -> getCurrentColor();
 
   float sum_weights = 0.0f;

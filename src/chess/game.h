@@ -3,6 +3,9 @@
 
 #include "game.fwd.h"
 
+#include <execinfo.h>
+#include <stdio.h>
+
 #include <string>
 #include <cassert>
 #include <iostream>
@@ -22,6 +25,10 @@ class Board : piece::PieceManager {
   friend class BoardController;
 
   public:
+    Board() = delete;
+    Board(const Board &b) = delete;
+    Board &operator=(const Board &b) = delete;
+
     Board(int board_length, int board_width);
     ~Board();
 
@@ -37,8 +44,7 @@ class Board : piece::PieceManager {
     // 1 |  5  6  7  8  9
     // 0 r  0  1  2  3  4
     inline piece::Piece* getPiece(int r, int c) {
-      bool isValid = isValidPosition(r, c);
-      assert(isValid);
+      assert(isValidPosition(r, c));
       int index = locMap(r, c);
       return _pieces[index];
     }
@@ -71,7 +77,7 @@ class Board : piece::PieceManager {
   private:
     int _length;
     int _width;
-    piece::Piece** _pieces;
+    std::vector<piece::Piece*> _pieces;
 
     std::stack<Move*> _move_stack;
 
@@ -81,17 +87,24 @@ class Board : piece::PieceManager {
 };
 
 class BoardController {
+  public:
+    BoardController(const BoardController &bc) = delete;
+    BoardController &operator=(const BoardController &bc) = delete;
+  
   protected:
-    inline piece::Piece** getBoard(Board* board) const { return board -> _pieces; }
+    BoardController() {}
+    inline std::vector<piece::Piece*> &getBoard(Board* board) const { return board -> _pieces; }
     inline int locMap(Board* board, int r, int c) const { return board -> locMap(r, c); }
 };
 
 class Move : BoardController, piece::PieceManager {
   public:
-    static std::vector<game::Move*> getMoves(int r1, int c1, int r2, int c2, Board* b); // Array of Move Pointers
+    static std::vector<game::Move> getMoves(int r1, int c1, int r2, int c2, Board* b); // Array of Move Pointers
     Move(int r1, int c1, int r2, int c2, piece::PieceType promotionType);
     Move(const Move &m);
     ~Move();
+
+    Move &operator=(const Move &m);
 
     bool operator==(Move m) const {
       return _start_row == m._start_row && _start_col == m._start_col && _end_row == m._end_row && _end_col == m._end_col;
@@ -185,6 +198,10 @@ class Game : BoardController, piece::PieceManager {
   friend class Board;
 
   public:
+    Game() = delete;
+    Game(const Game &g) = delete;
+    Game &operator=(const Game &g) = delete;
+
     Game(int length, int width);
     Game(Board* b);
     ~Game();
@@ -237,6 +254,16 @@ class Game : BoardController, piece::PieceManager {
       std::thread (play_game, this).detach();
     }
 
+    const void endGame() {
+      _over = true;
+      _is_move_complete = true;
+    }
+
+    const void waitForDelete() {
+      while (!_is_ready_to_delete)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
     inline bool isMoveOver() { return _is_move_complete; }
 
     inline bool isOver() { return _over; }
@@ -252,7 +279,7 @@ class Game : BoardController, piece::PieceManager {
     player::Player* _white_player;
     player::Player* _black_player;
 
-    bool _is_move_complete;
+    bool _is_move_complete, _is_ready_to_delete;
 
     const void playGame() {
       while (!_over) {
@@ -262,6 +289,7 @@ class Game : BoardController, piece::PieceManager {
         else
           _black_player -> playNextMove();
       }
+      _is_ready_to_delete = true;
     }
 
     static inline void play_game(Game* g) { g -> playGame(); }

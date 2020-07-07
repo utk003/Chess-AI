@@ -14,6 +14,10 @@ namespace player {
 
 class Player {
   public:
+    Player() = delete;
+    Player(const Player &p) = delete;
+    Player &operator=(const Player &p) = delete;
+
     Player(game::Game* g, piece::PieceColor c, player::PlayerType t);
     virtual ~Player();
 
@@ -36,6 +40,10 @@ class Player {
 
 class HumanPlayer : public Player {
   public:
+    HumanPlayer() = delete;
+    HumanPlayer(const HumanPlayer &p) = delete;
+    HumanPlayer &operator=(const HumanPlayer &p) = delete;
+
     HumanPlayer(game::Game* g, piece::PieceColor c);
     virtual ~HumanPlayer();
     virtual void playNextMove();
@@ -49,6 +57,10 @@ class HumanPlayer : public Player {
 
 class RandomPlayer : public Player {
   public:
+    RandomPlayer() = delete;
+    RandomPlayer(const RandomPlayer &p) = delete;
+    RandomPlayer &operator=(const RandomPlayer &p) = delete;
+
     RandomPlayer(game::Game* g, piece::PieceColor c);
     virtual ~RandomPlayer();
     virtual void playNextMove();
@@ -56,6 +68,10 @@ class RandomPlayer : public Player {
 
 class MinimaxPlayer : public Player {
   public:
+    MinimaxPlayer() = delete;
+    MinimaxPlayer(const MinimaxPlayer &p) = delete;
+    MinimaxPlayer &operator=(const MinimaxPlayer &p) = delete;
+    
     MinimaxPlayer(game::Game* g, piece::PieceColor c);
     virtual ~MinimaxPlayer();
     virtual void playNextMove();
@@ -84,6 +100,10 @@ class MinimaxPlayer : public Player {
 
 class AlphaBetaPlayer : public MinimaxPlayer {
   public:
+    AlphaBetaPlayer() = delete;
+    AlphaBetaPlayer(const AlphaBetaPlayer &p) = delete;
+    AlphaBetaPlayer &operator=(const AlphaBetaPlayer &p) = delete;
+  
     AlphaBetaPlayer(game::Game* g, piece::PieceColor c);
     virtual ~AlphaBetaPlayer();
     virtual void playNextMove();
@@ -102,6 +122,10 @@ class AlphaBetaPlayer : public MinimaxPlayer {
 
 class MonteCarloPlayer : public Player {
   public:
+    MonteCarloPlayer() = delete;
+    MonteCarloPlayer(const MonteCarloPlayer &p) = delete;
+    MonteCarloPlayer &operator=(const MonteCarloPlayer &p) = delete;
+
     MonteCarloPlayer(game::Game* g, piece::PieceColor c);
     virtual ~MonteCarloPlayer();
     virtual void playNextMove();

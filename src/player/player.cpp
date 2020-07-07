@@ -105,7 +105,7 @@ void player::RandomPlayer::playNextMove() {
 player::MinimaxPlayer::MinimaxPlayer(game::Game* g, piece::PieceColor c) : MinimaxPlayer(g, c, PlayerType::MINIMAX) {}
 player::MinimaxPlayer::MinimaxPlayer(game::Game* g, piece::PieceColor c, player::PlayerType t) : Player(g, c, t) {
   _search_depth = DEFAULT_SEARCH_DEPTH;
-  _simulation_board = new game::Board(_board -> length(), _board -> width());
+  _simulation_board = nullptr;
 
   _is_time_up = true;
   _move_counter = 0;
@@ -164,7 +164,6 @@ game::Move player::MinimaxPlayer::bestMove() {
   int depth = _search_depth;
   _is_time_up = false;
 
-  delete _simulation_board;
   _simulation_board = _board -> clone();
   _simulation_board -> setPawnUpgradeType(piece::PieceType::QUEEN);
 
@@ -195,6 +194,8 @@ game::Move player::MinimaxPlayer::bestMove() {
     if (_is_time_up)
       break;
   }
+  
+  delete _simulation_board;
 
   return selectedMove;
 }
@@ -300,7 +301,6 @@ game::Move player::AlphaBetaPlayer::bestMove() {
   int depth = _search_depth;
   _is_time_up = false;
 
-  delete _simulation_board;
   _simulation_board = _board -> clone();
   _simulation_board -> setPawnUpgradeType(piece::PieceType::QUEEN);
 
@@ -338,6 +338,8 @@ game::Move player::AlphaBetaPlayer::bestMove() {
     
     ++c;
   }
+
+  delete _simulation_board;
 
   std::cout << "  Processed " << std::to_string(c) << "/" << std::to_string(moves.size()) << " moves";
   std::cout << " (" << (_is_time_up ? "timed out": "search complete") << ")" << std::endl << std::endl;

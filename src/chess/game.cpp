@@ -20,14 +20,26 @@ game::Board::Board(int l, int w) {
   _length = l;
   _width = w;
 
-  _pieces = new piece::Piece*[l * w];
+  int i, total = _length * _width;
+  for (i = 0; i < total; ++i)
+    _pieces.push_back(nullptr);
 }
 
 game::Board::~Board() {
-  delete[] _pieces;
+  piece::Piece* piece;
+  for (int i = 0; i < _length * _width; ++i) {
+    piece = _pieces[i];
+    _pieces[i] = nullptr;
+    delete piece;
+  }
+  _pieces.clear();
 
-  while (!_move_stack.empty())
+  game::Move* move;
+  while (!_move_stack.empty()) {
+    move = _move_stack.top();
     _move_stack.pop();
+    delete move;
+  }
 }
 
 std::string game::Board::toString() {
@@ -156,24 +168,23 @@ bool game::Board::canPieceMove(int r, int c, int toR, int toC) {
   piece::PieceColor pieceColor = _pieces[locMap(r, c)] -> color(), enemyColor = !pieceColor;
   assert(pieceColor.isColored());
 
-  // get pieces in question
-  piece::Piece*& piece1 = _pieces[locMap(r, c)];
-  piece::Piece*& piece2 = _pieces[locMap(toR, toC)];
+  // get piece indices
+  int from = locMap(r, c), to = locMap(toR, toC);
 
-  // save piece 2 (piece 1 is saved into piece 2)
-  piece::Piece* copy = piece2;
+  // save replaced piece (b/c to is overwritten by from)
+  piece::Piece* copy = _pieces[to];
   piece::Piece* newPiece = new piece::Piece();
 
   // simulate move
-  piece2 = piece1;
-  piece1 = newPiece;
+  _pieces[to] = _pieces[from];
+  _pieces[from] = newPiece;
 
   // score threats
   bool isSafe = isKingSafe(pieceColor);
 
   // undo move
-  piece1 = piece2;
-  piece2 = copy;
+  _pieces[from] = _pieces[to];
+  _pieces[to] = copy;
 
   // free memory
   delete newPiece;
@@ -196,10 +207,10 @@ void game::Board::getPossibleMoves(std::vector<game::Move>* white, std::vector<g
           if (r1 == r2 && c1 == c2)
             continue;
           
-          std::vector<Move*> moves = Move::getMoves(r1, c1, r2, c2, this);
-          for (Move* move: moves) {
-            type = move -> pawn_promotion_type();
-            if (move -> verify(this)) {
+          std::vector<Move> moves = Move::getMoves(r1, c1, r2, c2, this);
+          for (Move move: moves) {
+            type = move.pawn_promotion_type();
+            if (move.verify(this)) {
               if (piece -> color().isWhite() && white != nullptr)
                 white -> emplace_back(r1, c1, r2, c2, type);
               else if (piece -> color().isBlack() && black != nullptr)
@@ -218,14 +229,16 @@ bool game::Board::doMove(Move* move, Game* game) {
   if (game != nullptr)
     game -> _current_player_color = !game -> _current_player_color;
   
-  return isCaptureMove;
+  return true;// isCaptureMove;
 }
 void game::Board::undoMove(Game* game) {
   if (_move_stack.empty())
     return;
 
-  _move_stack.top() -> undoMove(this);
+  Move* move = _move_stack.top();
+  move -> undoMove(this);
   _move_stack.pop();
+  delete move;
 
   if (game != nullptr)
     game -> _current_player_color = !game -> _current_player_color;
@@ -252,12 +265,13 @@ void game::Board::loadFromFile(std::string fileName) {
   piece::PieceColor color;
   piece::Piece* piece;
 
-  delete[] _pieces;
   int total_count = _length * _width;
-  _pieces = new piece::Piece*[total_count];
-
   int i, ind1, ind2;
   for (i = 0; i < total_count; ++i) {
+    piece = _pieces[i];
+    _pieces[i] = nullptr;
+    delete piece;
+
     std::getline(in, line);
 
     ind1 = line.find_first_of(" :");
@@ -291,19 +305,19 @@ void game::Board::loadFromFile(std::string fileName) {
 }
 
 // Move Class
-std::vector<game::Move*> game::Move::getMoves(int r1, int c1, int r2, int c2, game::Board* b) {
+std::vector<game::Move> game::Move::getMoves(int r1, int c1, int r2, int c2, game::Board* b) {
   piece::Piece* piece = b -> getPiece(r1, c1);
 
-  std::vector<game::Move*> moves;
+  std::vector<game::Move> moves;
 
   if (piece -> type().isPawn() && (r2 == 0 || r2 == 7)) {
-    moves.push_back(new game::Move(r1, c1, r2, c2, piece::PieceType::QUEEN));
-    moves.push_back(new game::Move(r1, c1, r2, c2, piece::PieceType::ROOK));
-    moves.push_back(new game::Move(r1, c1, r2, c2, piece::PieceType::KNIGHT));
-    moves.push_back(new game::Move(r1, c1, r2, c2, piece::PieceType::BISHOP));
+    moves.push_back(game::Move(r1, c1, r2, c2, piece::PieceType::QUEEN));
+    moves.push_back(game::Move(r1, c1, r2, c2, piece::PieceType::ROOK));
+    moves.push_back(game::Move(r1, c1, r2, c2, piece::PieceType::KNIGHT));
+    moves.push_back(game::Move(r1, c1, r2, c2, piece::PieceType::BISHOP));
   }
   else
-    moves.push_back(new game::Move(r1, c1, r2, c2));
+    moves.push_back(game::Move(r1, c1, r2, c2));
 
   return moves;
 }
@@ -330,8 +344,37 @@ game::Move::Move(const Move &m) {
 }
 
 game::Move::~Move() {
+  piece::Piece* piece;
+  for (std::map<std::pair<int, int>, piece::Piece*>::iterator it = _other_replaced_pieces.begin(); it != _other_replaced_pieces.end(); ++it) {
+    piece = _other_replaced_pieces[it -> first];
+    _other_replaced_pieces[it -> first] = nullptr;
+    delete piece;
+  }
   _other_replaced_pieces.clear();
+
   _piece_setting_changes.clear();
+}
+
+game::Move &game::Move::operator=(const Move &m) {
+  _start_row = m._start_row;
+  _start_col = m._start_col;
+
+  _end_row = m._end_row;
+  _end_col = m._end_col;
+
+  _pawn_promotion_type = m._pawn_promotion_type;
+
+  piece::Piece* piece;
+  for (std::map<std::pair<int, int>, piece::Piece*>::iterator it = _other_replaced_pieces.begin(); it != _other_replaced_pieces.end(); ++it) {
+    piece = _other_replaced_pieces[it -> first];
+    _other_replaced_pieces[it -> first] = nullptr;
+    delete piece;
+  }
+  _other_replaced_pieces.clear();
+  
+  _piece_setting_changes.clear();
+  
+  return *this;
 }
 
 bool game::Move::verify(Board* board) {
@@ -363,7 +406,7 @@ void game::Move::addSettingChange(int r, int c, bool oldSetting) {
 }
 
 bool game::Move::doMove(Board* board) {
-  piece::Piece** pieces = getBoard(board);
+  std::vector<piece::Piece*> &pieces = getBoard(board);
 
   piece::Piece* p;
   int r, c;
@@ -379,12 +422,11 @@ bool game::Move::doMove(Board* board) {
   
   int r1 = _start_row, c1 = _start_col, r2 = _end_row, c2 = _end_col;
 
-  piece::Piece*& piece1 = pieces[locMap(board, r1, c1)];
-  piece::Piece*& piece2 = pieces[locMap(board, r2, c2)];
+  int from = locMap(board, r1, c1), to = locMap(board, r2, c2);
 
-  piece::Piece* removedPiece = piece2;
-  piece2 = piece1;
-  piece1 = new piece::Piece();
+  piece::Piece* removedPiece = pieces[to];
+  pieces[to] = pieces[from];
+  pieces[from] = new piece::Piece();
 
   addReplacedPiece(r2, c2, removedPiece);
   switch (removedPiece -> type()) {
@@ -439,14 +481,14 @@ bool game::Move::doMove(Board* board) {
         int rookCol = (c2 > c1) * 7; // if c2 > c1, then king moved right, so rookCol = 7; else, rookCol = 0
         int newC = (c1 + c2) / 2;
 
-        piece::Piece*& p1 = pieces[locMap(board, r1, rookCol)];
-        addReplacedPiece(r1, rookCol, p1 -> clone()); // clone rook b/c it gets deleted in undoMove() while restoring pieces -> segfault
+        int oldPos = locMap(board, r1, rookCol);
+        int newPos = locMap(board, r2, newC);
 
-        piece::Piece*& p2 = pieces[locMap(board, r2, newC)];
-        addReplacedPiece(r2, newC, p2);
+        addReplacedPiece(r1, rookCol, pieces[oldPos] -> clone()); // clone rook b/c it gets deleted in undoMove() while restoring pieces -> segfault
+        addReplacedPiece(r2, newC, pieces[newPos]);
 
-        p2 = p1;
-        p1 = new piece::Piece();
+        pieces[newPos] = pieces[oldPos];
+        pieces[oldPos] = new piece::Piece();
       }
       break;
     
@@ -477,9 +519,9 @@ bool game::Move::doMove(Board* board) {
         pieces[locMap(board, r2, c2)] = newPiece;
       }
       if (abs(c1 - c2) == 1 && removedPiece -> type().isEmpty()) {
-        piece::Piece*& p = pieces[locMap(board, r1, c2)];
-        removedPiece = p;
-        p = new piece::Piece();
+        int captured = locMap(board, r1, c2);
+        removedPiece = pieces[captured];
+        pieces[captured] = new piece::Piece();
 
         addReplacedPiece(r1, c2, removedPiece);
       }
@@ -512,12 +554,14 @@ void game::Move::updateSetting(Board* board, int r, int c, bool setting) {
 }
 
 void game::Move::undoMove(Board* board) {
-  piece::Piece** pieces = getBoard(board);
+  std::vector<piece::Piece*> &pieces = getBoard(board);
   int r1 = _start_row, c1 = _start_col, r2 = _end_row, c2 = _end_col;
 
   int i1 = locMap(board, r1, c1), i2 = locMap(board, r2, c2);
+  piece::Piece* oldPos = pieces[i1];
   pieces[i1] = pieces[i2]; // Move back main piece
   pieces[i2] = nullptr; // Get rid of copy of moved piece so we don't nuke the program (end up segfaulting)
+  delete oldPos; // Delete old replacement piece!!!
 
   // Put back all other pieces
   piece::Piece* copy;
@@ -527,7 +571,7 @@ void game::Move::undoMove(Board* board) {
     index = locMap(board, coords.first, coords.second);
 
     copy = pieces[index];
-    pieces[index] = it -> second;
+    pieces[index] = it -> second -> clone();
     delete copy; // free memory to avoid memory leaks
   }
 
@@ -553,6 +597,7 @@ game::Game::Game(Board* b) {
   _black_player = nullptr;
 
   _is_move_complete = false;
+  _is_ready_to_delete = false;
 
   _current_player_color = piece::PieceColor::WHITE;
   _result = game::GameResult::NONE;
@@ -580,7 +625,7 @@ bool game::Game::processMove(Move m) {
   else
     _moves_since_last_capture = 0;
 
-  // Here to satisfy requirements for MCTS/AI players 🤡 (:clown:)
+  // Here to satisfy requirements for MCTS/AI players
   // SHOULD have no impact on runtime
   generatePossibleMoveVectors();
   return true;

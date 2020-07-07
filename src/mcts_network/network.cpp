@@ -21,16 +21,12 @@ std::pair<float, std::map<game::Move, float>> network::Decider::prediction(game:
 
   int i;
   for (i = 0; i < moves.size(); ++i) {
-    board -> doMove(&moves[i], game);
-    actionMap.emplace(moves[i], color_multiplier * (this -> predictPosition(board)));
+    board -> doMove(new game::Move(moves[i]), game);
+    actionMap[moves[i]] = 0.0f; //color_multiplier * (this -> predictPosition(board));
     board -> undoMove(game);
   }
 
   return {currEval, actionMap};
-}
-
-float network::Decider::predictPosition(game::Board* b) {
-  assert(false);
 }
 
 // Network class
@@ -73,12 +69,27 @@ network::Network::Network(std::vector<int> dims) {
 }
 
 network::Network::~Network() {
+  Neuron* neuron;
+  int i, j;
+  for (i = 0; i < _neurons.size(); ++i) {
+    for (j = 0; j < _neurons[i].size(); ++j) {
+      neuron = _neurons[i][j];
+      _neurons[i][j] = nullptr;
+      delete neuron;
+    }
+    _neurons[i].clear();
+  }
   _neurons.clear();
-  _connections.clear();
+
+  for (i = 0; i < _connections.size(); ++i) {
+    for (j = 0; j < _connections[i].size(); ++j)
+      _connections[i][j].clear();
+    _connections[i].clear();
+  }
 }
 
 float network::Network::predictPosition(game::Board* b) {
-  piece::Piece** board = getBoard(b);
+  std::vector<piece::Piece*> board = getBoard(b);
   
   int i;
   for (i = 0; i < 64; i++)

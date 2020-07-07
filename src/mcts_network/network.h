@@ -20,6 +20,8 @@ class Neuron {
 
   public:
     Neuron() = delete;
+    Neuron(const Neuron &n) = delete;
+    Neuron &operator=(const Neuron &n) = delete;
     // DEFAULT DESTRUCTOR
 
     inline float value() { return _value; }
@@ -35,13 +37,22 @@ class Neuron {
 };
 
 class NeuronManager {
+  public:
+    NeuronManager(const NeuronManager &nm) = delete;
+    NeuronManager &operator=(const NeuronManager &nm) = delete;
+
   protected:
+    NeuronManager() {}
+
     inline Neuron* createNeuron(int r, int i) const { return new Neuron(r, i); }
     inline void setValue(Neuron* n, float val) { n -> _value = val; }
 };
 
 class Decider {
   public:
+    Decider(const Decider &d) = delete;
+    Decider &operator=(const Decider &d) = delete;
+
     virtual std::pair<float, std::map<game::Move, float>> prediction(game::Game* game);
     virtual ~Decider() {} // Do nothing
   
@@ -49,11 +60,14 @@ class Decider {
     Decider() {}
     inline float random(float a, float b) { return (b - a) * rand() / RAND_MAX + a; } // Random numbers from [a,b)
 
-    virtual float predictPosition(game::Board* b);
+    virtual float predictPosition(game::Board* b) = 0;
 };
 
 class Network : public Decider, NeuronManager, game::BoardController {
   public:
+    Network(const Network &d) = delete;
+    Network &operator=(const Network &d) = delete;
+
     Network(); // default: 64-225-100-1 (for now)
     Network(std::vector<int> dims); // dimensions of network - starts off fully connected
     ~Network();
@@ -83,6 +97,10 @@ class Network : public Decider, NeuronManager, game::BoardController {
 
 class Randomizer : public Decider {
   public:
+    Randomizer() {}
+    Randomizer(const Randomizer &d) = delete;
+    Randomizer &operator=(const Randomizer &d) = delete;
+
     ~Randomizer() {} // Do nothing
   
   protected:

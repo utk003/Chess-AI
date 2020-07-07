@@ -16,6 +16,9 @@ class Node {
   friend class MCTS;
 
   public:
+    Node(const Node &n) = delete;
+    Node &operator=(const Node &n) = delete;
+
     Node(); // Default priority 0.0f -> for root node only
     Node(float prior);
 
@@ -29,7 +32,7 @@ class Node {
     inline piece::PieceColor color_to_play() { return _color_to_play; }
 
     inline bool expanded() { return !_children.empty(); }
-    inline std::map<game::Move, Node*> children() { return _children; }
+    inline std::map<game::Move, Node*> &children() { return _children; }
 
   private:
     float _priority;
@@ -44,6 +47,9 @@ class Node {
 class MCTS {
   public:
     MCTS() = delete;
+    MCTS(const MCTS &mcts) = delete;
+    MCTS &operator=(const MCTS &mcts) = delete;
+
     static std::pair<game::Move, Node*> run_mcts(game::Game* game, network::Decider* move_ranker);
 
   private:

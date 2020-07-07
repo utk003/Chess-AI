@@ -20,6 +20,9 @@ namespace piece {
 //     all of the essential information needed to create a deep reconstruction of the Piece
 class Piece {
   public:
+    Piece(const Piece &p) = delete;
+    Piece &operator=(const Piece &p) = delete;
+
     Piece();
     // DEFAULT DESTRUCTOR
 
@@ -54,6 +57,10 @@ class King : public Piece {
   friend class PieceManager;
   
   public:
+    King() = delete;
+    King(const King &p) = delete;
+    King &operator=(const King &p) = delete;
+
     King(PieceColor c);
     // DEFAULT DESTRUCTOR
     virtual bool verifyMove(game::Move move, game::Board* board);
@@ -73,6 +80,10 @@ class King : public Piece {
 // The Queen class: See piece.fwd.h && piece::Piece class
 class Queen : public Piece {
   public:
+    Queen() = delete;
+    Queen(const Queen &p) = delete;
+    Queen &operator=(const Queen &p) = delete;
+
     Queen(PieceColor c);
     // DEFAULT DESTRUCTOR
     virtual bool verifyMove(game::Move move, game::Board* board);
@@ -87,6 +98,10 @@ class Rook : public Piece {
   friend class PieceManager;
   
   public:
+    Rook() = delete;
+    Rook(const Rook &p) = delete;
+    Rook &operator=(const Rook &p) = delete;
+  
     Rook(PieceColor c);
     // DEFAULT DESTRUCTOR
     virtual bool verifyMove(game::Move move, game::Board* board);
@@ -106,6 +121,10 @@ class Rook : public Piece {
 // The Knight class: See piece.fwd.h && piece::Piece class
 class Knight : public Piece {
   public:
+    Knight() = delete;
+    Knight(const Knight &p) = delete;
+    Knight &operator=(const Knight &p) = delete;
+
     Knight(PieceColor c);
     // DEFAULT DESTRUCTOR
     virtual bool verifyMove(game::Move move, game::Board* board);
@@ -116,6 +135,10 @@ class Knight : public Piece {
 // The Bishop class: See piece.fwd.h && piece::Piece class
 class Bishop : public Piece {
   public:
+    Bishop() = delete;
+    Bishop(const Bishop &p) = delete;
+    Bishop &operator=(const Bishop &p) = delete;
+  
     Bishop(PieceColor c);
     // DEFAULT DESTRUCTOR
     virtual bool verifyMove(game::Move move, game::Board* board);
@@ -130,6 +153,10 @@ class Pawn : public Piece {
   friend class PieceManager;
 
   public:
+    Pawn() = delete;
+    Pawn(const Pawn &p) = delete;
+    Pawn &operator=(const Pawn &p) = delete;
+  
     Pawn(PieceColor c);
     // DEFAULT DESTRUCTOR
     virtual bool verifyMove(game::Move move, game::Board* board);
@@ -148,7 +175,13 @@ class Pawn : public Piece {
 
 // The PieceManager class: See piece.fwd.h && piece::King, piece::Rook, and piece::Pawn classes
 class PieceManager {
+  public:
+    PieceManager(const PieceManager &p) = delete;
+    PieceManager &operator=(const PieceManager &p) = delete;
+  
   protected:
+    PieceManager() {}
+
     inline void update_moved_flag(King* king, bool newValue) const { king -> _moved = newValue; }
     inline void update_moved_flag(Rook* rook, bool newValue) const { rook -> _moved = newValue; }
     inline void update_moved2x_flag(Pawn* pawn, bool newValue) const { pawn -> _moved2x = newValue; }
