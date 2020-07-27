@@ -1,6 +1,8 @@
 // game.fwd.h header guard
-#ifndef CHESSAI_CHESS_GAME_FWD_H_
-#define CHESSAI_CHESS_GAME_FWD_H_
+#ifndef CHESS_AI_CHESS_GAME_FWD_H_
+#define CHESS_AI_CHESS_GAME_FWD_H_
+
+#include <string>
 
 // The "game" namespace is for all game related classes:
 //   - Move, Board, Game classes
@@ -13,7 +15,63 @@ class BoardController;
 class Move;
 class Game;
 
+// Game Result "enum"
+class GameResult {
+  public:
+    enum Result {
+      BLACK, WHITE, STALEMATE, NONE
+    };
+
+    GameResult() = default;
+    GameResult(Result c) { value = c; }
+
+    constexpr operator Result() const { return value; }
+    explicit operator bool() = delete;
+
+    constexpr bool operator==(GameResult c) const { return value == c.value; }
+    constexpr bool operator!=(GameResult c) const { return value != c.value; }
+
+    constexpr bool isWhiteWin() const { return value == WHITE; }
+    constexpr bool isBlackWin() const { return value == BLACK; }
+    constexpr bool isStalemate() const { return value == STALEMATE; }
+    constexpr bool isGameUndecided() const { return value == NONE; }
+
+    std::string toString() const {
+      switch (value) {
+        case BLACK:
+          return "0-1";
+        case WHITE:
+          return "1-0";
+
+        case STALEMATE:
+          return "0.5-0.5";
+
+        case NONE:
+          return "none";
+      }
+    }
+
+    constexpr int evaluate() const {
+      switch (value) {
+        case BLACK:
+          return -1;
+        case WHITE:
+          return 1;
+
+        case STALEMATE:
+        case NONE:
+          return 0;
+
+        default:
+          assert(false);
+      }
+    }
+
+  private:
+    Result value;
+};
+
 }
 
 // end game.fwd.h header guard
-#endif // CHESSAI_CHESS_GAME_FWD_H_
+#endif // CHESS_AI_CHESS_GAME_FWD_H_

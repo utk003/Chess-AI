@@ -13,4 +13,4 @@ See logs.txt for a push-to-push change/update log, my thoughts on the project, a
 NOTE:
 The included make file only works for MacOS (I believe), and the code only compiles with Clang. GCC throws a bunch of errors when compiling the code. I will be looking into this soon in an attempt to make this project potentially cross-platform.
 
-The libraries required to build this project are the following: GLFW, GLEW, GSL
+The libraries required to build this project are the following: GLFW, GLEW, GSL, [stb](https://github.com/nothings/stb)

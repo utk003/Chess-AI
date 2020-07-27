@@ -1,10 +1,10 @@
-#ifndef CHESSAI_PLAYER_PLAYER_FWD_H_
-#define CHESSAI_PLAYER_PLAYER_FWD_H_
+#ifndef CHESS_AI_PLAYER_PLAYER_FWD_H_
+#define CHESS_AI_PLAYER_PLAYER_FWD_H_
 
 #include <string>
 
-#include "chess/piece.fwd.h"
-#include "chess/game.fwd.h"
+#include "../chess/piece.fwd.h"
+#include "../chess/game.fwd.h"
 
 namespace player {
 
@@ -18,7 +18,9 @@ class MonteCarloPlayer;
 // Player Type "enum"
 class PlayerType {
   public:
-    enum Type { HUMAN, RANDOM, MINIMAX, AB_PRUNING, MCTS, AI };
+    enum Type {
+      HUMAN, RANDOM, MINIMAX, AB_PRUNING, MCTS, AI
+    };
 
     PlayerType() = default;
     PlayerType(Type t) { value = t; }
@@ -36,17 +38,28 @@ class PlayerType {
     constexpr bool isMonteCarloTreeSearchPlayer() const { return value == MCTS; }
     constexpr bool isAIPlayer() const { return value == AI; }
 
-    inline Player* getPlayerOfType(game::Game* game, piece::PieceColor color) { return getPlayerOfType(*this, game, color); }
-    static Player* getPlayerOfType(PlayerType type, game::Game* game, piece::PieceColor color);
+    inline Player *getPlayerOfType(game::Game *game, piece::PieceColor color) const {
+      return getPlayerOfType(*this, game, color);
+    }
+    static Player *getPlayerOfType(PlayerType type, game::Game *game, piece::PieceColor color);
 
     std::string toString() const {
       switch (value) {
-        case HUMAN: return "Human Player";
-        case RANDOM: return "Random Player";
-        case MINIMAX: return "Minimax Player";
-        case AB_PRUNING: return "Alpha-Beta Pruning Player";
-        case MCTS: return "Monte Carlo Tree Search Player";
-        case AI: return "AI Network Player";
+        case HUMAN:
+          return "Human Player";
+        case RANDOM:
+          return "Random Player";
+        case MINIMAX:
+          return "Minimax Player";
+        case AB_PRUNING:
+          return "Alpha-Beta Pruning Player";
+        case MCTS:
+          return "Monte Carlo Tree Search Player";
+        case AI:
+          return "AI Network Player";
+
+        default:
+          assert(false);
       }
     }
 
@@ -56,4 +69,4 @@ class PlayerType {
 
 }
 
-#endif // CHESSAI_PLAYER_PLAYER_FWD_H_
+#endif // CHESS_AI_PLAYER_PLAYER_FWD_H_

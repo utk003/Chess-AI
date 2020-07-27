@@ -1,53 +1,56 @@
 #include "opengl.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+
 #include <stb_image.h>
 
-#include <iostream>
 #include <string>
+#include <utility>
+#include <fstream>
 
-#include "player/player.h"
-#include "chess/game.h"
+#include "../chess/game.h"
 
-std::map<GLFWwindow*, graphics::OpenGL*> graphics::OpenGL::_opengl_map;
+std::map<GLFWwindow *, graphics::OpenGL *> graphics::OpenGL::_opengl_map;
 
-void graphics::OpenGL::run_graphics(game::Game* game, std::string game_name) {
-  OpenGL* opengl = get_instance(game, game_name);
-  opengl -> run();
+void graphics::OpenGL::run_graphics(game::Game *game, const std::string &game_name) {
+  OpenGL *opengl = get_instance(game, game_name);
+  opengl->run();
   delete opengl;
 }
 
-graphics::OpenGL* graphics::OpenGL::get_instance(game::Game* game, std::string game_name) {
-  OpenGL* instance = new OpenGL(game, game_name);
-  instance -> initialize();
+graphics::OpenGL *graphics::OpenGL::get_instance(game::Game *game, const std::string &game_name) {
+  auto *instance = new OpenGL(game, game_name);
+  instance->initialize();
 
-  assert(instance -> _window != nullptr);
-  _opengl_map[instance -> _window] = instance;
+  assert(instance->_window != nullptr);
+  _opengl_map[instance->_window] = instance;
 
   return instance;
 }
 
-graphics::OpenGL::OpenGL(game::Game* game, std::string game_name) {
+graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
   _game = game;
-  _board = game -> board();
+  _board = game->board();
 
   asset_file_path_header = ASSETS_2D_FILE_PATH_HEADER;
 
-  _white = game -> white_player();
+  _white = game->white_player();
   assert(_white != nullptr);
-  if (_white -> type().isHumanPlayer())
-    _human_white = (player::HumanPlayer*) _white;
-  
-  _black = game -> black_player();
+  if (_white->type().isHumanPlayer())
+    _human_white = (player::HumanPlayer *) _white;
+
+  _black = game->black_player();
   assert(_black != nullptr);
-  if (_black -> type().isHumanPlayer())
-    _human_black = (player::HumanPlayer*) _black;
-  
+  if (_black->type().isHumanPlayer())
+    _human_black = (player::HumanPlayer *) _black;
+
   _game_name = game_name;
-  _window_title = _game_name + ": " + _white -> type().toString() + " vs " + _black -> type().toString();
+  _window_title = _game_name + ": " + _white->type().toString() + " vs " + _black->type().toString();
 
   _file_save_counter = 0;
+  _show_expanded_ui = false;
 }
+
 graphics::OpenGL::~OpenGL() {
   _opengl_map.erase(_window);
 
@@ -61,14 +64,14 @@ graphics::OpenGL::~OpenGL() {
 GLuint graphics::OpenGL::getCoordBuffer(int r, int c) {
   r -= 4;
   c -= 4;
-  
+
   GLfloat g_vertex_buffer_data[] = {
-    2.0f * c,       2.0f * r,       0.0f,
-    2.0f * c,       2.0f * (r + 1), 0.0f,
+    2.0f * c, 2.0f * r, 0.0f,
+    2.0f * c, 2.0f * (r + 1), 0.0f,
     2.0f * (c + 1), 2.0f * (r + 1), 0.0f,
-    2.0f * c,       2.0f * r,       0.0f,
+    2.0f * c, 2.0f * r, 0.0f,
     2.0f * (c + 1), 2.0f * (r + 1), 0.0f,
-    2.0f * (c + 1), 2.0f * r,       0.0f,
+    2.0f * (c + 1), 2.0f * r, 0.0f,
   };
 
   GLuint vertexbuffer;
@@ -78,6 +81,7 @@ GLuint graphics::OpenGL::getCoordBuffer(int r, int c) {
 
   return vertexbuffer;
 }
+
 GLuint graphics::OpenGL::getTextureBuffer() {
   GLfloat g_vertex_buffer_data[] = {
     0.0f, 1.0f,
@@ -96,9 +100,9 @@ GLuint graphics::OpenGL::getTextureBuffer() {
   return vertexbuffer;
 }
 
-GLuint graphics::OpenGL::loadTexture(std::string fileName) {
+GLuint graphics::OpenGL::loadTexture(const std::string &fileName) {
   int w, h, channels;
-  stbi_uc* buf = stbi_load(fileName.c_str(), &w, &h, &channels, 4);
+  stbi_uc *buf = stbi_load(fileName.c_str(), &w, &h, &channels, 4);
   assert(buf != nullptr);
 
   GLuint textureID;
@@ -113,15 +117,16 @@ GLuint graphics::OpenGL::loadTexture(std::string fileName) {
 
   return textureID;
 }
+
 void graphics::OpenGL::loadTextures() {
   std::string pieceNames[6] = {"rook", "pawn", "king", "queen", "knight", "bishop"};
   std::string pieceColors[2] = {"black", "white"};
   std::string backColors[2] = {"0", "1"};
 
   std::string str;
-  for (std::string backColor: backColors) {
-    for (std::string name: pieceNames)
-      for (std::string pieceColor: pieceColors) {
+  for (const std::string &backColor: backColors) {
+    for (const std::string &name: pieceNames)
+      for (const std::string &pieceColor: pieceColors) {
         str = asset_file_path_header + "piece/" + backColor + "-" + pieceColor + "_" + name + ".png";
         _texture_map[str] = loadTexture(str);
       }
@@ -129,11 +134,14 @@ void graphics::OpenGL::loadTextures() {
     _texture_map[str] = loadTexture(str);
   }
 
-  str = asset_file_path_header + "overlay/selected.png";
-  _texture_map[str] = loadTexture(str);
+  std::string boardUI[4] = {"selected", "previous_move", "normal_move", "attacking_move"};
+  for (const std::string &name: boardUI) {
+    str = asset_file_path_header + "overlay/" + name + ".png";
+    _texture_map[str] = loadTexture(str);
+  }
 }
 
-void graphics::OpenGL::mouseClicked(GLFWwindow* window, int button, int action, int mods) {
+void graphics::OpenGL::mouseClicked(GLFWwindow *window, int button, int action, int mods) {
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
     double x, y;
     glfwGetCursorPos(window, &x, &y);
@@ -144,38 +152,43 @@ void graphics::OpenGL::mouseClicked(GLFWwindow* window, int button, int action, 
     int r = 7 - (int) (8 * y / h), c = (int) (8 * x / w);
 
     if (_human_white != nullptr)
-      _human_white -> clickSquare(r, c);
+      _human_white->clickSquare(r, c);
     if (_human_black != nullptr)
-      _human_black -> clickSquare(r, c);
+      _human_black->clickSquare(r, c);
   }
 }
-void graphics::OpenGL::keyboardPressed(GLFWwindow* window, int key, int scancode, int action, int mods) {
+
+void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode, int action, int mods) {
   if (action == GLFW_RELEASE) {
     switch (key) {
       case GLFW_KEY_Q:
         promotionHelper(piece::PieceType::QUEEN);
         break;
-      
+
       case GLFW_KEY_R:
         promotionHelper(piece::PieceType::ROOK);
         break;
-      
+
       case GLFW_KEY_K:
         promotionHelper(piece::PieceType::KNIGHT);
         break;
-      
+
       case GLFW_KEY_B:
         promotionHelper(piece::PieceType::BISHOP);
         break;
-      
+
       case GLFW_KEY_Z:
-        _board -> undoMove(_game);
+        _board->undoMove(_game);
         break;
-      
+
+      case GLFW_KEY_TAB:
+        _show_expanded_ui = !_show_expanded_ui;
+        break;
+
       case GLFW_KEY_S:
         std::ofstream myfile;
-        myfile.open ("../game_state/save " + std::to_string(_file_save_counter++) + ".txt");
-        myfile << _board -> toString();
+        myfile.open("../game_state/save " + std::to_string(_file_save_counter++) + ".txt");
+        myfile << _board->toString();
         myfile.close();
         break;
     }
@@ -184,8 +197,7 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow* window, int key, int scancode
 
 void graphics::OpenGL::initialize() {
   // Initialize GLFW
-  if (!glfwInit())
-  {
+  if (!glfwInit()) {
     fprintf(stderr, "Failed to initialize GLFW\n");
     assert(false);
   }
@@ -199,7 +211,8 @@ void graphics::OpenGL::initialize() {
   // Open a window and create its OpenGL context
   _window = glfwCreateWindow(1024, 1024, _window_title.c_str(), nullptr, nullptr);
   if (_window == nullptr) {
-    fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
+    fprintf(stderr,
+            "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
     glfwTerminate();
     assert(false);
   }
@@ -241,7 +254,7 @@ void graphics::OpenGL::initialize() {
   // Get a handle for our "MVP" uniform
   _mvp_matrixID = glGetUniformLocation(_shader_programID, "MVP");
   glm::mat4 proj_matrix = glm::ortho(-8.0f, 8.0f, -8.0f, 8.0f, 0.0f, 100.0f);
-  glm::mat4 view_matrix = glm::lookAt(glm::vec3(0,0,4), glm::vec3(0,0,0), glm::vec3(0,1,0));
+  glm::mat4 view_matrix = glm::lookAt(glm::vec3(0, 0, 4), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   glm::mat4 model_matrix = glm::mat4(1.0f);
   _mvp_matrix = proj_matrix * view_matrix * model_matrix;
 
@@ -250,12 +263,10 @@ void graphics::OpenGL::initialize() {
 }
 
 void graphics::OpenGL::run() {
-  int r, c, len = _board -> length(), wid = _board -> width(), count = 0;
+  int r, c, len = _board->length(), wid = _board->width();
   do {
-    // std::cout << count++ << std::endl;
-    
-    if (_game -> isOver()) {
-      game::GameResult result = _game -> getResult();
+    if (_game->isOver()) {
+      game::GameResult result = _game->getResult();
       if (result.isBlackWin())
         _window_title = _game_name + ": Black won";
       else if (result.isWhiteWin())
@@ -288,54 +299,75 @@ void graphics::OpenGL::run() {
     GLuint textbuff = getTextureBuffer();
 
     // Draw Images
+    std::string filePath;
+    // 64 squares/pieces
     for (r = 0; r < len; ++r)
       for (c = 0; c < wid; ++c) {
-        GLuint buffer = getCoordBuffer(r, c);
-
-        glBindBuffer(GL_ARRAY_BUFFER, buffer);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, textbuff);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
         int backColorIndex = (r + c) % 2;
-        piece::Piece* piece = _board -> getPiece(r, c);
-        std::string filePath = asset_file_path_header + "piece/" + std::to_string(backColorIndex) + "-" + piece -> image_file_path();
+        piece::Piece *piece = _board->getPiece(r, c);
+        filePath = asset_file_path_header + "piece/" + std::to_string(backColorIndex) + "-" + piece->image_file_path();
 
-        glBindTexture(GL_TEXTURE_2D, _texture_map[filePath]);
-
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        glDeleteBuffers(1, &buffer);
+        renderSquare(r, c, textbuff, filePath);
       }
-    if (_game -> selected_x() != -1 && _game -> selected_y() != -1) {
-      GLuint selection_overlay = getCoordBuffer(_game -> selected_x(), _game -> selected_y());
+    // selected square overlay + attacked squares overlays
+    int x = _game->selected_x(), y = _game->selected_y();
+    if (x != -1 && y != -1) {
+      filePath = asset_file_path_header + "overlay/selected.png";
+      renderSquare(x, y, textbuff, filePath);
 
-      glBindBuffer(GL_ARRAY_BUFFER, selection_overlay);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+      // attack squares if extra ui enabled
+      if (_show_expanded_ui) {
+        auto *moves = new std::vector<game::Move>();
+        _game->board()->getMovesFromSquare(x, y, moves);
+        for (const game::Move &move: *moves) {
+          if (move.isAttack(_game->board()))
+            filePath = asset_file_path_header + "overlay/attacking_move.png";
+          else
+            filePath = asset_file_path_header + "overlay/normal_move.png";
 
-      glBindBuffer(GL_ARRAY_BUFFER, textbuff);
-      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-      std::string filePath = asset_file_path_header + "overlay/selected.png";
-
-      glBindTexture(GL_TEXTURE_2D, _texture_map[filePath]);
-
-      glDrawArrays(GL_TRIANGLES, 0, 6);
-
-      glDeleteBuffers(1, &selection_overlay);
+          renderSquare(move.endingRow(), move.endingColumn(), textbuff, filePath);
+        }
+        delete moves;
+      }
     }
+    // previous move overlay
+    game::Move *pastMove = _game->board()->getLastMove();
+    if (pastMove != nullptr) {
+      filePath = asset_file_path_header + "overlay/previous_move.png";
+      renderSquare(pastMove->startingRow(), pastMove->startingColumn(), textbuff, filePath);
+      renderSquare(pastMove->endingRow(), pastMove->endingColumn(), textbuff, filePath);
+    }
+    delete pastMove;
+
     // Clean up VBOs
     glDeleteBuffers(1, &textbuff);
 
     // Disable drawing attributes
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
-    
+
     // Swap buffers
     glfwSwapBuffers(_window);
     glfwPollEvents();
 
+    // ++count; // loop counter -> for debugging only
+
   } // Check if the ESC key was pressed or the window was closed
   while (glfwGetKey(_window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(_window) == 0);
+}
+
+void graphics::OpenGL::renderSquare(int r, int c, GLuint textbuff, const std::string &image_file_path) {
+  GLuint buffer = getCoordBuffer(r, c);
+
+  glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  glBindBuffer(GL_ARRAY_BUFFER, textbuff);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  glBindTexture(GL_TEXTURE_2D, _texture_map[image_file_path]);
+
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  glDeleteBuffers(1, &buffer);
 }

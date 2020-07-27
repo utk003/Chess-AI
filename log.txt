@@ -23,3 +23,17 @@ Also, because all of the memory issues are now resolved, I am finally starting w
 Beyond that, there isn't much else to say. I fixed a few other bugs regarding closing the game prematurely and excessive threading. The only "major" issue is more of an inconvience: The game occasionally flickers randomly, and the cause is currently unknown. However, that isn't really that significant, at least for now.
 
 Overall, I have made some decent progress in the past few days. A little bit more to implement the networks, and then I'm pretty much done (except for training of course).
+
+
+
+July 27, 2020
+-------------
+Since the last push, we have had some major progress.
+
+A) The network is set up as a basic MLP with Gradient Descent/Backprop training. Eventually, I would like to set up NEAT, Q-Learning, or even CNNs for more effective training. However, the network *can* train now.
+
+B) Major Code Cleanup: Formatting, Coding Style, etc.
+
+C) Switch to CMake over hardcoded makefile
+
+Now it's time to train!!

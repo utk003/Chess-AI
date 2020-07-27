@@ -3,175 +3,287 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
 
-#include <string>
 #include <vector>
 #include <utility>
 #include <map>
 #include <cmath>
-#include <iostream>
+#include <functional>
+#include <atomic>
 
-#include "chess/game.h"
-#include "network.h"
+#include "../chess/game.h"
+#include "decider.h"
+#include "../util/util.h"
 
 // Node class
-tree::Node::Node() : Node(0.0f) {}
-tree::Node::Node(float prior) {
+tree::Node::Node(piece::PieceColor col) : Node(0.0f, col) {}
+tree::Node::Node(double prior, piece::PieceColor col) {
   _priority = prior;
+
+  _expanded = false;
 
   _visit_count = 0;
   _value_sum = 0.0f;
 
-  _color_to_play = piece::PieceColor::NONE;
+  _color_to_play = col;
 }
 
 tree::Node::~Node() {
-  Node* node;
-  for (std::map<game::Move, Node*>::iterator it = _children.begin(); it != _children.end(); ++it) {
-    node = _children[it -> first];
-    _children[it -> first] = nullptr;
+  Node *node;
+  for (auto &it : _children) {
+    node = _children[it.first];
+    _children[it.first] = nullptr;
     delete node;
   }
   _children.clear();
 }
 
-// Monte Carlo Tree Search class
-std::pair<game::Move, tree::Node*> tree::MCTS::run_mcts(game::Game* game, network::Decider* move_ranker) {  
-  Node* root = new Node();
-  Node* node = nullptr;
-  game::Game* clone = game -> clone();
-  std::vector<Node*> searchPath;
-  expand_node(root, clone, move_ranker);
-  add_dirichlet_noise(root);
+double tree::Node::priority() const {
+  return _priority;
+}
 
-  float value;
+void tree::Node::increment_visit_count() {
+  _visit_count++;
+}
+int tree::Node::visit_count() const {
+  return _visit_count;
+}
 
-  int i;
-  for (i = 0; i < NUM_SIMULATIONS; ++i) {
-    node = root;
-    delete clone;
-    clone = game -> clone();
-    searchPath = {root};
+void tree::Node::increase_value(double inc) {
+  _value_sum += inc;
+}
+double tree::Node::value() const {
+  return _visit_count > 0 ? _value_sum / _visit_count: 0.0f;
+}
 
-    while (node -> expanded()) {
-      std::pair<game::Move, Node*> optimal = select_optimal_child(node);
-      node = optimal.second;
-      assert(clone -> processMove(optimal.first)); // must complete processing -> success
-      searchPath.push_back(node);
+piece::PieceColor tree::Node::color_to_play() {
+  return _color_to_play;
+}
+int tree::Node::countChildren() {
+  return _children.size();
+}
+
+bool tree::Node::expanded() const {
+  return _expanded;
+}
+bool tree::Node::expand(const std::map<game::Move, double> &weights, double sum_weights) {
+  if (!_expanded) {
+    for (auto &weight : weights)
+      _children[weight.first] = new Node(weight.second / sum_weights, !_color_to_play);
+
+    _expanded = true;
+  }
+  return !_children.empty();
+}
+
+void tree::Node::addNoise(double frac, const double *noise) {
+  int i = 0;
+  for (auto &it : _children)
+    it.second->_priority = it.second->_priority * (1.0f - frac) + noise[i++] * frac;
+}
+
+std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::function<double(Node *, Node *)> &ranker) {
+  std::pair<game::Move, Node *> optimal{game::Move(-1, -1, 8, 8, piece::PieceType::NONE), nullptr};
+  double max_score = -1.0f, score;
+
+  for (auto &it : _children) {
+    score = ranker(this, it.second);
+    if (score > max_score) {
+      max_score = score;
+      optimal = {it.first, it.second};
     }
+  }
 
-    value = expand_node(node, clone, move_ranker);
+  assert(optimal.second != nullptr);
+  return optimal;
+}
 
-    propagate_result(searchPath, value, clone -> getCurrentColor());
+tree::Node *tree::Node::combineNodes(const std::vector<Node *> &nodes, int num_nodes) {
+  piece::PieceColor root_color = nodes[0]->color_to_play();
+  auto *new_node = new Node(root_color);
+
+  Node *child;
+  for (int i = 0; i < num_nodes; ++i) {
+    for (auto &it: nodes[i]->_children) {
+      if (new_node->_children[it.first] == nullptr)
+        new_node->_children[it.first] = new Node(!root_color);
+
+      child = new_node->_children[it.first];
+      child->_priority += it.second->_priority / num_nodes;
+      child->_visit_count += it.second->_visit_count;
+      child->_value_sum += it.second->_value_sum;
+    }
+    new_node->_value_sum += nodes[i]->_value_sum;
+    new_node->_visit_count += nodes[i]->_visit_count;
+  }
+
+  return new_node;
+}
+
+// Monte Carlo Tree Search class
+std::pair<game::Move, tree::Node *>
+tree::MCTS::run_mcts_multithreaded(game::Game *game, decider::Decider *move_ranker) {
+  return run_mcts_multithreaded(game, DEFAULT_NUM_THREADS, move_ranker);
+}
+std::pair<game::Move, tree::Node *>
+tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::Decider *move_ranker) {
+  std::vector<Node *> roots(num_threads);
+  for (int i = 0; i < num_threads; ++i)
+    roots[i] = new Node(game->getCurrentColor());
+
+  std::pair<game::Move, tree::Node *> return_val = run_mcts_multithreaded(game, num_threads, move_ranker, roots);
+
+  for (auto &it: roots)
+    delete it;
+  roots.clear();
+
+  return return_val;
+}
+std::pair<game::Move, tree::Node *>
+tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::Decider *move_ranker,
+                                   const std::vector<Node *> &roots) {
+  assert(roots.size() >= num_threads);
+
+  std::atomic_int counter{NUM_SIMULATIONS};
+  game::Game *clone = game->clone();
+  for (int i = 0; i < num_threads; ++i) {
+    expand_node(roots[i], clone, move_ranker);
+    add_dirichlet_noise(roots[i]);
+
+    thread::create(mcts, game, move_ranker, roots[i], std::ref(counter));
   }
 
   delete clone;
 
-  return {select_optimal_move(root), root};
+  thread::wait_for([&] { return counter <= -num_threads; });
+
+  auto *master_node = Node::combineNodes(roots, num_threads);
+  return {select_optimal_move(master_node).first, master_node};
 }
 
-game::Move tree::MCTS::select_optimal_move(Node* root) {
-  std::map<game::Move, Node*> children = root -> children();
+std::pair<game::Move, tree::Node *> tree::MCTS::run_mcts(game::Game *game, decider::Decider *move_ranker) {
+  return run_mcts(game, move_ranker, new Node(game->getCurrentColor()));
+}
+std::pair<game::Move, tree::Node *> tree::MCTS::run_mcts(game::Game *game, decider::Decider *move_ranker, Node *root) {
+  game::Game *clone = game->clone();
+  expand_node(root, clone, move_ranker);
+  add_dirichlet_noise(root);
+  delete clone;
 
-  std::map<game::Move, Node*>::iterator it = children.begin();
-  game::Move optimal = it -> first;
-  float max_visits = it -> second -> visit_count(), visits;
+  std::atomic_int counter{NUM_SIMULATIONS};
+  mcts(game, move_ranker, root, std::ref(counter));
 
-  ++it; // go to next element;
+  return {select_optimal_move(root).first, root};
+}
 
-  for (/* Nothing here */; it != children.end(); ++it) {
-    visits = it -> second -> visit_count();
-    if (visits > max_visits) {
-      max_visits = visits;
-      optimal = it -> first;
+void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *root, std::atomic_int &count) {
+  Node *node;
+  game::Game *clone;
+  std::vector<Node *> searchPath;
+
+  double value;
+
+  int i;
+  while (count-- > 0) {
+    node = root;
+    clone = game->clone();
+    searchPath = {root};
+
+    i = 0;
+    while (!clone->isOver() && i < 1) { // TODO decide 1 or 20 or unlimited depth search
+      if (!node->expanded())
+        expand_node(node, clone, move_ranker);
+
+      std::pair<game::Move, Node *> optimal = select_optimal_move(node);
+      node = optimal.second;
+      assert(clone->tryMove(optimal.first));
+
+      searchPath.push_back(node);
+      ++i;
     }
-  }
 
-  return optimal;
+    // If game is over
+    if (clone->isOver())
+      // If black has won, that means current color is white
+      // Thus, value is ((1 * -1) + 1) / 2 = 0, which is fine b/c current node (white) lost
+
+      // If white has won, that means current color is black
+      // Thus, value is ((-1 * 1) + 1) / 2 = 0, which is fine b/c current node (black) lost
+
+      // If game is drawn:
+      // value is ((±1 * 0) + 1) / 2 = 0.5, which is correct b/c it is a draw
+      value = (clone->getCurrentColor().colorCode() * clone->getResult().evaluate() + 1.0) / 2.0;
+    else // game is not over
+      value = 0.5; // unknown outcome... assume 0.5 -> TODO find better default result
+
+    propagate_result(searchPath, value, clone->getCurrentColor());
+
+    delete clone;
+  }
 }
 
-void tree::MCTS::propagate_result(std::vector<Node*> searchPath, float value, piece::PieceColor color) {
-  for (int i = 0; i < searchPath.size(); ++i) {
-    searchPath[i] -> _visit_count += 1;
-    searchPath[i] -> _value_sum += color == searchPath[i] -> color_to_play() ? value: 1.0f - value;
+void tree::MCTS::propagate_result(std::vector<Node *> &searchPath, double value, piece::PieceColor color) {
+  for (auto &i : searchPath) {
+    i->increment_visit_count();
+    i->increase_value(color == i->color_to_play() ? value: 1.0 - value);
   }
 }
 
-std::pair<game::Move, tree::Node*> tree::MCTS::select_optimal_child(Node* parent) {
-  std::map<game::Move, Node*> children = parent -> children();
-
-  std::map<game::Move, Node*>::iterator it = children.begin();
-  std::pair<game::Move, Node*> optimal {it -> first, it -> second};
-  float max_score = score_move(parent, it -> second), score;
-
-  ++it; // go to next element;
-
-  for (/* Nothing here */; it != children.end(); ++it) {
-    score = score_move(parent, it -> second);
-    if (score > max_score) {
-      max_score = score;
-      optimal = {it -> first, it -> second};
-    }
-  }
-
-  return optimal;
+std::pair<game::Move, tree::Node *> tree::MCTS::select_optimal_move(Node *parent) {
+  return parent->selectOptimalMove(score_move);
 }
 
 // UCB algorithm
-float tree::MCTS::score_move(Node* parent, Node* child) {
-  const float BASE_MULTIPLIER_BASE = 19652.0f;
-  const float BASE_MULTIPLIER_INIT = 1.25f;
-  float base = log((parent -> visit_count() + BASE_MULTIPLIER_BASE + 1.0f) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
-  base *= sqrt(parent -> visit_count()) / (child -> visit_count() + 1);
+double tree::MCTS::score_move(Node *parent, Node *child) {
+  const double BASE_MULTIPLIER_BASE = 1965.0; // Straight from Google/DeepMind's AlphaZero paper - 19652.0f original
+  const double BASE_MULTIPLIER_INIT = 2.75; // Straight from Google/DeepMind's AlphaZero paper - 1.25f original
 
-  return base * child -> priority() + child -> value();
+  double base = log((parent->visit_count() + BASE_MULTIPLIER_BASE + 1.0) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
+  base *= sqrt(log(parent->visit_count() + 1) / (child->visit_count() + 1)); // exploration term
+  // original -> base *= sqrt(parent -> visit_count()) / (child -> visit_count() + 1);
+
+  return base * child->priority() + child->value();
 }
 
-float tree::MCTS::expand_node(tree::Node* node, game::Game* game, network::Decider* move_ranker) {
-  std::pair<float, std::map<game::Move, float>> prediction = move_ranker -> prediction(game);
-  node -> _color_to_play = game -> getCurrentColor();
+double tree::MCTS::expand_node(tree::Node *node, game::Game *game, decider::Decider *move_ranker) {
+  std::pair<double, std::map<game::Move, double>> prediction = move_ranker->prediction(game);
 
-  float sum_weights = 0.0f;
-  std::map<game::Move, float> weights, log_weights = prediction.second;
-  for (std::map<game::Move, float>::iterator it = log_weights.begin(); it != log_weights.end(); ++it) {
-    weights[it -> first] = exp(it -> second);
-    sum_weights += weights[it -> first];
+  int color_multiplier = node->color_to_play().colorCode();
+
+  double sum_weights = 0.0;
+  std::map<game::Move, double> weights, log_weights = prediction.second;
+  for (auto &log_weight : log_weights) {
+    weights[log_weight.first] = exp(color_multiplier * log_weight.second);
+    sum_weights += weights[log_weight.first];
   }
 
-  for (std::map<game::Move, float>::iterator it = weights.begin(); it != weights.end(); ++it)
-    node -> _children[it -> first] = new Node(it -> second / sum_weights);
+  node->expand(weights, sum_weights);
 
-  const float DRAW_THRESHOLD = 0.1f;
-  float eval = prediction.first;
-  // Map network output to 0 for loss, 1 for win, and 0.5 for tie
+  const double DRAW_THRESHOLD = 0.1;
+  double eval = color_multiplier * prediction.first;
+  // Map decider output to 0 for loss, 1 for win, and 0.5 for tie
   if (eval > DRAW_THRESHOLD)
-    return 1.0f;
+    return 1.0;
   if (eval < -DRAW_THRESHOLD)
-    return 0.0f;
-  return 0.5f;
+    return 0.0;
+  return 0.5;
 }
 
-void tree::MCTS::add_dirichlet_noise(Node* node) {
-  gsl_rng* rng = gsl_rng_alloc(gsl_rng_default);
-  const float DIRICHLET_NOISE_ALPHA_VALUE = 0.3f; // Straight from Google/DeepMind's AlphaZero paper
-  const float EXPLORATION_FRACTION_RATIO = 0.25f; // Straight from Google/DeepMind's AlphaZero paper
+void tree::MCTS::add_dirichlet_noise(Node *node) {
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
+  const double DIRICHLET_NOISE_ALPHA_VALUE = 0.15; // Straight from Google/DeepMind's AlphaZero paper - 0.2 original
+  const double EXPLORATION_FRACTION_RATIO = 0.35; // Straight from Google/DeepMind's AlphaZero paper - 0.25 original
 
-  std::map<game::Move, Node*> children = node -> children();
-  int size = children.size();
+  int size = node->countChildren();
 
-  double* alphas = new double[size];
-  double* thetas = new double[size];
+  auto *alphas = new double[size];
+  auto *thetas = new double[size];
   int i;
   for (i = 0; i < size; ++i)
     alphas[i] = DIRICHLET_NOISE_ALPHA_VALUE;
-  
+
   gsl_ran_dirichlet(rng, size, alphas, thetas);
 
-  i = 0;
-  float frac = EXPLORATION_FRACTION_RATIO;
-  for (std::map<game::Move, Node*>::iterator it = children.begin(); it != children.end(); ++it) {
-    it -> second -> _priority = it -> second -> _priority * (1 - frac) + thetas[i] * frac;
-    ++i;
-  }
+  node->addNoise(EXPLORATION_FRACTION_RATIO, thetas);
 
   delete[] alphas;
   delete[] thetas;

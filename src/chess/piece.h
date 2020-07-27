@@ -1,6 +1,6 @@
 // piece.h header guard
-#ifndef CHESSAI_CHESS_PIECE_H_
-#define CHESSAI_CHESS_PIECE_H_
+#ifndef CHESS_AI_CHESS_PIECE_H_
+#define CHESS_AI_CHESS_PIECE_H_
 
 #include "piece.fwd.h"
 
@@ -24,54 +24,48 @@ class Piece {
     Piece &operator=(const Piece &p) = delete;
 
     Piece();
-    // DEFAULT DESTRUCTOR
+    virtual ~Piece() = default;
 
-    inline PieceColor color() { return _color; }
-    inline PieceType type() { return _type; }
-    inline std::string image_file_path() { return _image_file_path; }
+    [[nodiscard]] inline PieceColor color() const { return _color; }
+    [[nodiscard]] inline PieceType type() const { return _type; }
+    [[nodiscard]] inline std::string image_file_path() const { return _image_file_path; }
 
-    virtual bool verifyMove(game::Move move, game::Board* board);
+    virtual bool verifyMove(const game::Move &move, game::Board *board);
 
-    virtual Piece* clone();
-
-    virtual std::string toString() { return _type.toString() + " " + _color.toString(); }
-
-    virtual int code();
+    [[nodiscard]] virtual Piece *clone() const;
+    [[nodiscard]] virtual int code() const;
+    [[nodiscard]] virtual std::string toString() const;
 
   protected:
     Piece(PieceColor c, PieceType t);
 
-    const int ONE_MILLION = 1000000;
-
-    PieceColor _color;
-    PieceType _type;
+    PieceColor _color{};
+    PieceType _type{};
     std::string _image_file_path;
 
-    bool checkClearMovePath(game::Board* board, int r1, int c1, int r2, int c2);
+    static bool checkClearMovePath(game::Board *board, int r1, int c1, int r2, int c2);
 };
 
 // The King class: See piece.fwd.h && piece::Piece class
 // This class also contains: The method moved(), which is used internally for castling requirements
 // This class has the friend PieceManager class, through which its moved flag can be updated
 class King : public Piece {
-  friend class PieceManager;
-  
+    friend class PieceManager;
+
   public:
     King() = delete;
     King(const King &p) = delete;
     King &operator=(const King &p) = delete;
 
-    King(PieceColor c);
-    // DEFAULT DESTRUCTOR
-    virtual bool verifyMove(game::Move move, game::Board* board);
+    explicit King(PieceColor c);
+    ~King() override = default;
 
-    inline bool moved() { return _moved; }
+    bool verifyMove(const game::Move &move, game::Board *board) override;
+    [[nodiscard]] inline bool moved() const { return _moved; }
 
-    virtual Piece* clone();
-
-    virtual std::string toString() { return _type.toString() + " " + _color.toString() + " (" + (_moved ? "1": "0") + ")"; }
-
-    virtual int code();
+    [[nodiscard]] Piece *clone() const override;
+    [[nodiscard]] int code() const override;
+    [[nodiscard]] std::string toString() const override;
 
   private:
     bool _moved;
@@ -84,35 +78,35 @@ class Queen : public Piece {
     Queen(const Queen &p) = delete;
     Queen &operator=(const Queen &p) = delete;
 
-    Queen(PieceColor c);
-    // DEFAULT DESTRUCTOR
-    virtual bool verifyMove(game::Move move, game::Board* board);
+    explicit Queen(PieceColor c);
+    ~Queen() override = default;
 
-    virtual Piece* clone();
+    bool verifyMove(const game::Move &move, game::Board *board) override;
+
+    [[nodiscard]] Piece *clone() const override;
 };
 
 // The Rook class: See piece.fwd.h && piece::Piece class
 // This class also contains: The method moved(), which is used internally for castling requirements
 // This class has the friend PieceManager class, through which its moved flag can be updated
 class Rook : public Piece {
-  friend class PieceManager;
-  
+    friend class PieceManager;
+
   public:
     Rook() = delete;
     Rook(const Rook &p) = delete;
     Rook &operator=(const Rook &p) = delete;
-  
-    Rook(PieceColor c);
+
+    explicit Rook(PieceColor c);
+    ~Rook() override = default;
+
     // DEFAULT DESTRUCTOR
-    virtual bool verifyMove(game::Move move, game::Board* board);
+    bool verifyMove(const game::Move &move, game::Board *board) override;
+    [[nodiscard]] inline bool moved() const { return _moved; }
 
-    inline bool moved() { return _moved; }
-
-    virtual Piece* clone();
-
-    virtual std::string toString() { return _type.toString() + " " + _color.toString() + " (" + (_moved ? "1": "0") + ")"; }
-
-    virtual int code();
+    [[nodiscard]] Piece *clone() const override;
+    [[nodiscard]] int code() const override;
+    [[nodiscard]] std::string toString() const override;
 
   private:
     bool _moved;
@@ -125,11 +119,12 @@ class Knight : public Piece {
     Knight(const Knight &p) = delete;
     Knight &operator=(const Knight &p) = delete;
 
-    Knight(PieceColor c);
-    // DEFAULT DESTRUCTOR
-    virtual bool verifyMove(game::Move move, game::Board* board);
+    explicit Knight(PieceColor c);
+    ~Knight() override = default;
 
-    virtual Piece* clone();
+    bool verifyMove(const game::Move &move, game::Board *board) override;
+
+    [[nodiscard]] Piece *clone() const override;
 };
 
 // The Bishop class: See piece.fwd.h && piece::Piece class
@@ -138,36 +133,35 @@ class Bishop : public Piece {
     Bishop() = delete;
     Bishop(const Bishop &p) = delete;
     Bishop &operator=(const Bishop &p) = delete;
-  
-    Bishop(PieceColor c);
-    // DEFAULT DESTRUCTOR
-    virtual bool verifyMove(game::Move move, game::Board* board);
 
-    virtual Piece* clone();
+    explicit Bishop(PieceColor c);
+    ~Bishop() override = default;
+
+    bool verifyMove(const game::Move &move, game::Board *board) override;
+
+    [[nodiscard]] Piece *clone() const override;
 };
 
 // The Pawn class: See piece.fwd.h && piece::Piece class
 // This class also contains: The method moved2x(), which is used internally for en passante requirements
 // This class has the friend PieceManager class, through which its moved2x flag can be updated
 class Pawn : public Piece {
-  friend class PieceManager;
+    friend class PieceManager;
 
   public:
     Pawn() = delete;
     Pawn(const Pawn &p) = delete;
     Pawn &operator=(const Pawn &p) = delete;
-  
-    Pawn(PieceColor c);
-    // DEFAULT DESTRUCTOR
-    virtual bool verifyMove(game::Move move, game::Board* board);
 
-    inline bool moved2x() { return _moved2x; }
+    explicit Pawn(PieceColor c);
+    ~Pawn() override = default;
 
-    virtual Piece* clone();
+    bool verifyMove(const game::Move &move, game::Board *board) override;
+    [[nodiscard]] inline bool moved2x() const { return _moved2x; }
 
-    virtual std::string toString() { return _type.toString() + " " + _color.toString() + " (" + (_moved2x ? "1": "0") + ")"; }
-
-    virtual int code();
+    [[nodiscard]] Piece *clone() const override;
+    [[nodiscard]] int code() const override;
+    [[nodiscard]] std::string toString() const override;
 
   private:
     bool _moved2x;
@@ -178,16 +172,17 @@ class PieceManager {
   public:
     PieceManager(const PieceManager &p) = delete;
     PieceManager &operator=(const PieceManager &p) = delete;
-  
-  protected:
-    PieceManager() {}
 
-    inline void update_moved_flag(King* king, bool newValue) const { king -> _moved = newValue; }
-    inline void update_moved_flag(Rook* rook, bool newValue) const { rook -> _moved = newValue; }
-    inline void update_moved2x_flag(Pawn* pawn, bool newValue) const { pawn -> _moved2x = newValue; }
+  protected:
+    PieceManager() = default;
+    ~PieceManager() = default;
+
+    inline static void update_moved_flag(King *king, bool newValue) { king->_moved = newValue; }
+    inline static void update_moved_flag(Rook *rook, bool newValue) { rook->_moved = newValue; }
+    inline static void update_moved2x_flag(Pawn *pawn, bool newValue) { pawn->_moved2x = newValue; }
 };
 
 }
 
 // end piece.h header guard
-#endif // CHESSAI_CHESS_PIECE_H_
+#endif // CHESS_AI_CHESS_PIECE_H_

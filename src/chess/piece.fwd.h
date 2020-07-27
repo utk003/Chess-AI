@@ -1,8 +1,10 @@
 // piece.fwd.h header guard
-#ifndef CHESSAI_CHESS_PIECE_FWD_H_
-#define CHESSAI_CHESS_PIECE_FWD_H_
+#ifndef CHESS_AI_CHESS_PIECE_FWD_H_
+#define CHESS_AI_CHESS_PIECE_FWD_H_
 
 #include <string>
+#include <cassert>
+#include <iostream>
 
 // The "piece" namespace is for all piece related classes/methods:
 //   - PieceColor and PieceType "enums"
@@ -40,7 +42,9 @@ class PieceManager;
 //   - The methods toString() and fromString(...) for converting to and from std::string
 class PieceColor {
   public:
-    enum Color { BLACK, WHITE, NONE };
+    enum Color {
+      BLACK, WHITE, NONE
+    };
 
     PieceColor() = default;
     PieceColor(Color c) { value = c; }
@@ -60,26 +64,50 @@ class PieceColor {
 
     std::string toString() const {
       switch (value) {
-        case BLACK: return "black";
-        case WHITE: return "white";
+        case BLACK:
+          return "black";
+        case WHITE:
+          return "white";
 
-        case NONE: return "none";
+        case NONE:
+          return "none";
+
+        default:
+          assert(false);
       }
     }
 
-    static PieceColor fromString(std::string s) {
-      if (s.compare("black") == 0)
+    static PieceColor fromString(const std::string &s) {
+      if (s == "black")
         return BLACK;
-      if (s.compare("white") == 0)
+      if (s == "white")
         return WHITE;
       return NONE;
     }
 
+    friend std::istream &operator>>(std::istream &input, PieceColor &c) {
+      std::string str;
+      input >> str;
+      c.value = fromString(str);
+      return input;
+    }
+
+    friend std::ostream &operator<<(std::ostream &output, PieceColor &c) {
+      output << c.toString();
+      return output;
+    }
+
     constexpr int colorCode() const {
       switch (value) {
-        case BLACK: return -1;
-        case WHITE: return 1;
-        case NONE: return 0;
+        case BLACK:
+          return -1;
+        case WHITE:
+          return 1;
+        case NONE:
+          return 0;
+
+        default:
+          assert(false);
       }
     }
 
@@ -105,7 +133,9 @@ class PieceColor {
 //   - minimaxValue(...) methods for getting the Minimax value of a piece (for the Minimax algorithm and derivatives)
 class PieceType {
   public:
-    enum Type { KING, QUEEN, ROOK, KNIGHT, BISHOP, PAWN, NONE };
+    enum Type {
+      KING, QUEEN, ROOK, KNIGHT, BISHOP, PAWN, NONE
+    };
 
     PieceType() = default;
     PieceType(Type t) { value = t; }
@@ -126,56 +156,81 @@ class PieceType {
 
     std::string toString() const {
       switch (value) {
-        case KING: return "king";
-        case QUEEN: return "queen";
-        case ROOK: return "rook";
-        case KNIGHT: return "knight";
-        case BISHOP: return "bishop";
-        case PAWN: return "pawn";
-        
-        case NONE: return "none";
+        case KING:
+          return "king";
+        case QUEEN:
+          return "queen";
+        case ROOK:
+          return "rook";
+        case KNIGHT:
+          return "knight";
+        case BISHOP:
+          return "bishop";
+        case PAWN:
+          return "pawn";
+
+        case NONE:
+          return "none";
+
+        default:
+          assert(false);
       }
     }
 
-    inline Piece* getPieceOfType(PieceColor c) { return getPieceOfType(*this, c); }
-    static Piece* getPieceOfType(PieceType t, PieceColor c);
+    inline Piece *getPieceOfType(PieceColor c) const { return getPieceOfType(*this, c); }
+    static Piece *getPieceOfType(PieceType t, PieceColor c);
 
-    static PieceType fromString(std::string s) {
-      if (s.compare("king") == 0)
+    static PieceType fromString(const std::string &s) {
+      if (s == "king")
         return KING;
-      if (s.compare("queen") == 0)
+      if (s == "queen")
         return QUEEN;
-      if (s.compare("rook") == 0)
+      if (s == "rook")
         return ROOK;
-      if (s.compare("knight") == 0)
+      if (s == "knight")
         return KNIGHT;
-      if (s.compare("bishop") == 0)
+      if (s == "bishop")
         return BISHOP;
-      if (s.compare("pawn") == 0)
+      if (s == "pawn")
         return PAWN;
       return NONE;
+    }
+
+    friend std::istream &operator>>(std::istream &input, PieceType &t) {
+      std::string str;
+      input >> str;
+      t.value = fromString(str);
+      return input;
+    }
+
+    friend std::ostream &operator<<(std::ostream &output, PieceType &t) {
+      output << t.toString();
+      return output;
     }
 
     constexpr int minimaxValue() const {
       switch (value) {
         case KING:
           return 100;
-        
+
         case QUEEN:
           return 9;
-        
+
         case ROOK:
           return 5;
-        
+
         case KNIGHT:
         case BISHOP:
           return 3;
-        
+
         case PAWN:
           return 1;
-        
+
         case NONE:
           return 0;
+
+        default:
+          assert(false);
       }
     }
 
@@ -183,38 +238,52 @@ class PieceType {
       switch (value) {
         case KING: // +10 if in home row
           return 100 + 10 * (r == homeRow);
-        
+
         case QUEEN: // +1 for in center 4x4
           return 9 + (2 <= r && r < 6 && 2 <= c && c < 6);
-        
+
         case ROOK: // +1 for not in center 4x4, +2 for enemy end row
           return 5 + !(2 <= r && r < 6 && 2 <= c && c < 6) + (abs(7 - homeRow - r) <= 1);
-        
+
         case KNIGHT: // +1 for 4x4 center, +1 for 5th or 6th row position center
-          return 3 + (2 <= r && r < 6 && 2 <= c && c < 6) + (homeRow == 0 ? (4 <= r && r < 6): (2 <= r && r < 4)) * (!(2 <= c && c < 6));
-        
+          return 3 + (2 <= r && r < 6 && 2 <= c && c < 6) +
+                 (homeRow == 0 ? (4 <= r && r < 6): (2 <= r && r < 4)) * (!(2 <= c && c < 6));
+
         case BISHOP: // +1 for near each main diagonal
           return 3 + (6 <= r + c && r + c <= 8) + (-1 <= r - c && r - c <= 1);
-        
+
         case PAWN: // +1 if in 4x4 center or 2x8 middle rows, +2 if in 2x4 center, +1 if in last square before promotion
           return 1 + (2 <= r && r < 6 && 2 <= c && c < 6) + (3 <= r && r < 5) + (abs(6 - homeRow) == r);
-        
+
         case NONE:
           return 0;
+
+        default:
+          assert(false);
       }
     }
 
+    const static int TYPE_CODE_DIFFERENCE = 1 << 20;
     constexpr int typeCode() const {
-      const int TWO_MILLION = 2000000;
       switch (value) {
-        case KING: return 1 * TWO_MILLION;
-        case QUEEN: return 2 * TWO_MILLION;
-        case ROOK: return 3 * TWO_MILLION;
-        case KNIGHT: return 4 * TWO_MILLION;
-        case BISHOP: return 5 * TWO_MILLION;
-        case PAWN: return 6 * TWO_MILLION;
+        case KING:
+          return 1 * TYPE_CODE_DIFFERENCE;
+        case QUEEN:
+          return 2 * TYPE_CODE_DIFFERENCE;
+        case ROOK:
+          return 3 * TYPE_CODE_DIFFERENCE;
+        case KNIGHT:
+          return 4 * TYPE_CODE_DIFFERENCE;
+        case BISHOP:
+          return 5 * TYPE_CODE_DIFFERENCE;
+        case PAWN:
+          return 6 * TYPE_CODE_DIFFERENCE;
 
-        case NONE: return 0;
+        case NONE:
+          return 0;
+
+        default:
+          assert(false);
       }
     }
 
@@ -225,4 +294,4 @@ class PieceType {
 }
 
 // end piece.fwd.h header guard
-#endif // CHESSAI_CHESS_PIECE_FWD_H_
+#endif // CHESS_AI_CHESS_PIECE_FWD_H_
