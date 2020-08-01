@@ -40,61 +40,10 @@ class Network : public decider::Decider {
     Network *clone();
     static Network *clone(Network *network);
 
-    [[nodiscard]] inline std::string toString() const {
-      std::string to_string = std::to_string(_num_layers) + "\n";
+    friend std::istream &operator>>(std::istream &input, Network *&net);
+    friend std::ostream &operator<<(std::ostream &output, Network *&net);
 
-      int n;
-      std::string line;
-      for (n = 0; n < _num_layers; ++n)
-        line += " " + std::to_string(_dimensions[n]);
-      to_string += line.substr(1) + "\n";
-
-      int i, j;
-      for (n = 0; n < _num_layers - 1; ++n) {
-        line = "";
-        for (i = 0; i < _dimensions[n]; ++i)
-          for (j = 0; j < _dimensions[n + 1]; ++j)
-            to_string += " " + std::to_string(_connections[n][i][j]);
-        to_string += line.substr(1) + "\n";
-      }
-      return to_string;
-    }
-
-    friend std::istream &operator>>(std::istream &input, Network *&net) {
-      // Read number of layers in network
-      int number_of_layers;
-      input >> number_of_layers;
-      std::vector<int> network_dimensions = std::vector<int>(number_of_layers);
-
-      // Read network dimensions
-      for (int n = 0; n < number_of_layers; ++n)
-        input >> network_dimensions[n];
-
-      net->updateInternals(network_dimensions);
-
-      for (int n = 0; n < number_of_layers - 1; ++n)
-        for (int i = 0; i < network_dimensions[n]; ++i)
-          for (int j = 0; j < network_dimensions[n + 1]; ++j)
-            input >> net->_connections[n][i][j];
-
-      return input;
-    }
-    friend std::ostream &operator<<(std::ostream &output, Network *&net) {
-      output << net->toString();
-      return output;
-    }
-
-    [[nodiscard]] static inline Network *loadNetwork(const std::string &file_path) {
-      std::ifstream in_stream(file_path);
-      assert(in_stream.is_open());
-
-      auto network = new Network();
-      in_stream >> network;
-
-      in_stream.close();
-
-      return network;
-    }
+    static Network *loadFromFile(const std::string &file_path);
 
   protected:
     double predictPosition(game::Board *b) override;
@@ -185,20 +134,22 @@ class NetworkStorage : NetworkManager {
     static Network *initialize(const std::vector<int> &dims);
     static Network *initialize(const std::string &file_path);
 
-    static void storeNetwork();
-
-    static void saveNetworks();
-    static void clearNetworks();
-    static void flushStorage(bool save_networks);
+    static void saveNetwork();
+    static void flushStorage();
 
     static void saveBoard(const game::Board *board);
     static void setTestCaseSelector(const std::function<void(game::Board *)> &selector);
 
-    static int NETWORK_SAVE_INTERVAL;
+    static bool SAVE_NETWORKS;
 
   private:
+    inline const static std::string NETWORK_STORAGE_FILE_PATH = "../network_dump/";
+    inline const static std::string LATEST_NETWORK = NETWORK_STORAGE_FILE_PATH + "latest.txt";
+
+    static void saveLatestNetwork();
+
     static Network *_current_network;
-    static std::vector<Network *> _network_storage;
+    static long _network_count;
     static std::function<void(game::Board *)> _network_training_case;
 };
 

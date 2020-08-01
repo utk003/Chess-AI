@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <fstream>
+#include <cstdio>
 
 // Network class
 network::Network::Network() : Network({64, 144, 225, 100, 1}) {}
@@ -134,7 +135,7 @@ void network::Network::randomNetwork(Network *network) {
   for (n = 0; n < network->_num_layers - 1; ++n)
     for (i = 0; i < network->_dimensions[n]; ++i)
       for (j = 0; j < network->_dimensions[n + 1]; ++j)
-        network->_connections[n][i][j] = random(-1.0f, 1.0f);
+        network->_connections[n][i][j] = random(-1.0, 1.0);
 }
 
 network::Network *network::Network::uniformNetwork() {
@@ -154,7 +155,7 @@ void network::Network::uniformNetwork(Network *network) {
   for (n = 0; n < network->_num_layers - 1; ++n)
     for (i = 0; i < network->_dimensions[n]; ++i)
       for (j = 0; j < network->_dimensions[n + 1]; ++j)
-        network->_connections[n][i][j] = 0.0f;
+        network->_connections[n][i][j] = 0.0;
 }
 
 network::Network *network::Network::clone() {
@@ -170,6 +171,18 @@ network::Network *network::Network::clone() {
 }
 network::Network *network::Network::clone(Network *network) {
   return network->clone();
+}
+
+network::Network *network::Network::loadFromFile(const std::string &file_path) {
+  std::ifstream in_stream(file_path);
+  assert(in_stream.is_open());
+
+  Network *network = nullptr;
+  in_stream >> network;
+
+  in_stream.close();
+
+  return network;
 }
 
 // Optimizer class
@@ -193,7 +206,7 @@ void network::Optimizer::optimize(Network *network, game::Board *input, const do
 
   // Initialize errors
   omegas[output_index][0] = TARGET_OUTPUT - neurons[output_index][0];
-  double error = omegas[output_index][0] * omegas[output_index][0] / 2.0f;
+  double error = omegas[output_index][0] * omegas[output_index][0] / 2.0;
 
   // Back-propagation here
   int layer, next_layer, index, next_index;
@@ -204,7 +217,7 @@ void network::Optimizer::optimize(Network *network, game::Board *input, const do
       // get psi value
       psi = omegas[next_layer][next_index] * threshold_deriv(thetas[next_layer][next_index]);
       // clear omega
-      omegas[next_layer][next_index] = 0.0f;
+      omegas[next_layer][next_index] = 0.0;
 
       for (index = 0; index < dimensions[layer]; ++index) {
         omegas[layer][index] += psi * weights[layer][index][next_index];
@@ -217,7 +230,7 @@ void network::Optimizer::optimize(Network *network, game::Board *input, const do
   // Get new error
   propagate(network);
   double new_error_diff = TARGET_OUTPUT - neurons[output_index][0];
-  double new_error = new_error_diff * new_error_diff / 2.0f;
+  double new_error = new_error_diff * new_error_diff / 2.0;
 
   if (new_error < error) {
     if (lambda < MAX_LEARNING_CONSTANT)
@@ -232,68 +245,72 @@ void network::Optimizer::optimize(Network *network, game::Board *input, const do
 }
 
 // NetworkStorage Class
-int network::NetworkStorage::NETWORK_SAVE_INTERVAL = 0;
-
 network::Network *network::NetworkStorage::_current_network = nullptr;
-std::vector<network::Network *> network::NetworkStorage::_network_storage;
+long network::NetworkStorage::_network_count = 0;
+bool network::NetworkStorage::SAVE_NETWORKS = false;
 std::function<void(game::Board *)> network::NetworkStorage::_network_training_case;
 
 network::Network *network::NetworkStorage::current_network() {
-  if (_current_network == nullptr)
-    initialize();
+  assert (_current_network != nullptr);
   return _current_network;
+}
+
+// TODO decide whether new network for training is random or uniform 0s
+template<class... Args>
+inline network::Network *create_network(Args &&... args) {
+  return network::Network::randomNetwork(args...);
 }
 
 network::Network *network::NetworkStorage::initialize() {
-  delete _current_network;
-  _current_network = new Network();
+  assert (_current_network == nullptr);
+
+  _current_network = create_network();
+  saveLatestNetwork();
+
   return _current_network;
 }
 network::Network *network::NetworkStorage::initialize(const std::vector<int> &dims) {
-  delete _current_network;
-  _current_network = new Network(dims);
+  assert (_current_network == nullptr);
+
+  _current_network = create_network(dims);
+  saveLatestNetwork();
+
   return _current_network;
 }
 network::Network *network::NetworkStorage::initialize(const std::string &file_path) {
-  delete _current_network;
-  _current_network = network::Network::loadNetwork(file_path);
+  assert (_current_network == nullptr);
+
+  _current_network = network::Network::loadFromFile(file_path);
+  saveLatestNetwork();
+
   return _current_network;
 }
 
-void network::NetworkStorage::storeNetwork() {
-  if (_current_network != nullptr) {
-    _network_storage.push_back(_current_network);
-    _current_network = _current_network->clone();
-  } else
-    _current_network = new Network();
+void network::NetworkStorage::saveNetwork() {
+  if (SAVE_NETWORKS && _current_network != nullptr) {
+    if (_network_count >= 0) {
+      std::string past_network = NETWORK_STORAGE_FILE_PATH + "gen-" + std::to_string(_network_count++) + ".txt";
+      rename(LATEST_NETWORK.c_str(), past_network.c_str());
+    } else
+      _network_count++;
+
+    saveLatestNetwork();
+  }
 }
 
-void network::NetworkStorage::saveNetworks() {
-  for (int i = 0; i < _network_storage.size(); ++i) {
+void network::NetworkStorage::saveLatestNetwork() {
+  if (SAVE_NETWORKS) {
     // TODO finalize network dump system
-    std::ofstream myfile;
-    myfile.open("../network_dump/network " + std::to_string(i * NETWORK_SAVE_INTERVAL) + ".txt");
-    myfile << _network_storage[i];
-    myfile.close();
+    std::ofstream new_net_file;
+    new_net_file.open(LATEST_NETWORK);
+    new_net_file << _current_network;
+    new_net_file.close();
   }
 }
 
-void network::NetworkStorage::clearNetworks() {
-  for (auto &i : _network_storage)
-    delete i;
-  _network_storage.clear();
-}
-
-void network::NetworkStorage::flushStorage(bool save_networks) {
-  if (_current_network != nullptr) {
-    _network_storage.push_back(_current_network);
-    _current_network = nullptr;
-  }
-
-  if (save_networks)
-    saveNetworks();
-
-  clearNetworks();
+void network::NetworkStorage::flushStorage() {
+  saveNetwork();
+  delete _current_network;
 }
 
 void network::NetworkStorage::saveBoard(const game::Board *board) {
@@ -305,4 +322,49 @@ void network::NetworkStorage::saveBoard(const game::Board *board) {
 }
 void network::NetworkStorage::setTestCaseSelector(const std::function<void(game::Board *)> &selector) {
   _network_training_case = selector;
+}
+
+// Network to/from iostream
+namespace network {
+
+std::istream &operator>>(std::istream &input, Network *&net) {
+  if (net == nullptr)
+    net = new Network();
+
+  // Read number of layers in network
+  int number_of_layers;
+  input >> number_of_layers;
+  std::vector<int> network_dimensions = std::vector<int>(number_of_layers);
+
+  // Read network dimensions
+  for (int n = 0; n < number_of_layers; ++n)
+    input >> network_dimensions[n];
+
+  net->updateInternals(network_dimensions);
+
+  for (int n = 0; n < number_of_layers - 1; ++n)
+    for (int i = 0; i < network_dimensions[n]; ++i)
+      for (int j = 0; j < network_dimensions[n + 1]; ++j)
+        input >> net->_connections[n][i][j];
+
+  return input;
+}
+
+std::ostream &operator<<(std::ostream &output, Network *&net) {
+  output << net->_num_layers << std::endl;
+
+  int n;
+  for (n = 0; n < net->_num_layers - 1; ++n)
+    output << net->_dimensions[n] << " ";
+  output << net->_dimensions[net->_num_layers - 1] << std::endl;
+
+  int i, j;
+  for (n = 0; n < net->_num_layers - 1; ++n)
+    for (i = 0; i < net->_dimensions[n]; ++i)
+      for (j = 0; j < net->_dimensions[n + 1]; ++j)
+        output << net->_connections[n][i][j] << " ";
+
+  return output;
+}
+
 }

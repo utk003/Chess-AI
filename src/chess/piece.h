@@ -4,9 +4,11 @@
 
 #include "piece.fwd.h"
 
+#include <iostream>
 #include <string>
 
 #include "game.fwd.h"
+#include "../util/util.h"
 
 // The "piece" namespace: See piece.fwd.h
 namespace piece {
@@ -16,7 +18,6 @@ namespace piece {
 //   - Methods to access the piece's color, type, and image file path through color(), type(), and image_file_path(), respectively
 //   - A vitual method verifyMove(...) which each extending class changes to accurately evaluate whether the move is valid
 //   - A virtual clone() method which returns a deep copy of the current piece
-//   - A virtual toString() method that returns an std::string that contains
 //     all of the essential information needed to create a deep reconstruction of the Piece
 class Piece {
   public:
@@ -34,16 +35,18 @@ class Piece {
 
     [[nodiscard]] virtual Piece *clone() const;
     [[nodiscard]] virtual int code() const;
-    [[nodiscard]] virtual std::string toString() const;
+
+    friend std::istream &operator>>(std::istream &input, Piece *&p);
+    friend std::ostream &operator<<(std::ostream &output, Piece *&p);
 
   protected:
     Piece(PieceColor c, PieceType t);
 
     PieceColor _color{};
-    PieceType _type{};
     std::string _image_file_path;
 
     static bool checkClearMovePath(game::Board *board, int r1, int c1, int r2, int c2);
+    PieceType _type{};
 };
 
 // The King class: See piece.fwd.h && piece::Piece class
@@ -65,7 +68,8 @@ class King : public Piece {
 
     [[nodiscard]] Piece *clone() const override;
     [[nodiscard]] int code() const override;
-    [[nodiscard]] std::string toString() const override;
+
+    friend std::ostream &operator<<(std::ostream &output, King *&k);
 
   private:
     bool _moved;
@@ -84,6 +88,8 @@ class Queen : public Piece {
     bool verifyMove(const game::Move &move, game::Board *board) override;
 
     [[nodiscard]] Piece *clone() const override;
+
+    friend std::ostream &operator<<(std::ostream &output, Queen *&q);
 };
 
 // The Rook class: See piece.fwd.h && piece::Piece class
@@ -106,7 +112,8 @@ class Rook : public Piece {
 
     [[nodiscard]] Piece *clone() const override;
     [[nodiscard]] int code() const override;
-    [[nodiscard]] std::string toString() const override;
+
+    friend std::ostream &operator<<(std::ostream &output, Rook *&r);
 
   private:
     bool _moved;
@@ -125,6 +132,8 @@ class Knight : public Piece {
     bool verifyMove(const game::Move &move, game::Board *board) override;
 
     [[nodiscard]] Piece *clone() const override;
+
+    friend std::ostream &operator<<(std::ostream &output, Knight *&k);
 };
 
 // The Bishop class: See piece.fwd.h && piece::Piece class
@@ -140,6 +149,8 @@ class Bishop : public Piece {
     bool verifyMove(const game::Move &move, game::Board *board) override;
 
     [[nodiscard]] Piece *clone() const override;
+
+    friend std::ostream &operator<<(std::ostream &output, Bishop *&b);
 };
 
 // The Pawn class: See piece.fwd.h && piece::Piece class
@@ -161,7 +172,8 @@ class Pawn : public Piece {
 
     [[nodiscard]] Piece *clone() const override;
     [[nodiscard]] int code() const override;
-    [[nodiscard]] std::string toString() const override;
+
+    friend std::ostream &operator<<(std::ostream &output, Pawn *&p);
 
   private:
     bool _moved2x;
@@ -173,13 +185,16 @@ class PieceManager {
     PieceManager(const PieceManager &p) = delete;
     PieceManager &operator=(const PieceManager &p) = delete;
 
+    static Piece *getPieceOfTypeAndColor(PieceType t, PieceColor c);
+    static Piece *getPieceOfTypeAndColor(PieceType t, PieceColor c, bool mod);
+
   protected:
     PieceManager() = default;
     ~PieceManager() = default;
 
-    inline static void update_moved_flag(King *king, bool newValue) { king->_moved = newValue; }
-    inline static void update_moved_flag(Rook *rook, bool newValue) { rook->_moved = newValue; }
-    inline static void update_moved2x_flag(Pawn *pawn, bool newValue) { pawn->_moved2x = newValue; }
+    inline static void update_flag(King *king, bool newValue) { king->_moved = newValue; }
+    inline static void update_flag(Rook *rook, bool newValue) { rook->_moved = newValue; }
+    inline static void update_flag(Pawn *pawn, bool newValue) { pawn->_moved2x = newValue; }
 };
 
 }

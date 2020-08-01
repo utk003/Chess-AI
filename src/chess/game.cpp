@@ -4,9 +4,11 @@
 #include <cassert>
 #include <memory>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <utility>
+#include <functional>
 
 #include "piece.h"
 #include "../util/util.h"
@@ -40,13 +42,6 @@ game::Board::~Board() {
   }
 }
 
-std::string game::Board::toString() const {
-  std::string to_string;
-  for (int i = 0; i < _length * _width; ++i)
-    to_string += std::to_string(i) + " - " + _pieces[i]->toString() + "\n";
-  return to_string;
-}
-
 int game::Board::getPositionThreats(int r, int c, piece::PieceColor kingColor) const {
   assert(isValidPosition(r, c));
 
@@ -56,7 +51,10 @@ int game::Board::getPositionThreats(int r, int c, piece::PieceColor kingColor) c
   piece::Piece *checkPiece;
 
   // Check axis attacks (queen/rook)
-  std::vector<std::vector<int>> axisCheck = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+  std::vector<std::vector<int>> axisCheck = {{1,  0},
+                                             {-1, 0},
+                                             {0,  1},
+                                             {0,  -1}};
   for (std::vector<int> axis: axisCheck) {
     x = r + axis[0];
     y = c + axis[1];
@@ -77,7 +75,10 @@ int game::Board::getPositionThreats(int r, int c, piece::PieceColor kingColor) c
   }
 
   // Check diagonal attacks (queen/bishop)
-  std::vector<std::vector<int>> diagCheck = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+  std::vector<std::vector<int>> diagCheck = {{1,  1},
+                                             {1,  -1},
+                                             {-1, 1},
+                                             {-1, -1}};
   for (std::vector<int> diag: diagCheck) {
     x = r + diag[0];
     y = c + diag[1];
@@ -124,7 +125,8 @@ int game::Board::getPositionThreats(int r, int c, piece::PieceColor kingColor) c
   }
 
   // Check knight attacks
-  std::vector<std::vector<int>> knightMoves = {{1, 2}, {2, 1}};
+  std::vector<std::vector<int>> knightMoves = {{1, 2},
+                                               {2, 1}};
   for (std::vector<int> move: knightMoves)
     for (int mr: pm1)
       for (int mc: pm1) {
@@ -202,7 +204,7 @@ void game::Board::getMovesFromSquare(int r, int c, std::vector<game::Move> *move
         continue;
 
       std::vector<Move> poss_moves = Move::getMoves(r, c, r2, c2, this);
-      for (const Move& move: poss_moves)
+      for (const Move &move: poss_moves)
         if (move.verify(this))
           moves->push_back(move);
     }
@@ -266,40 +268,53 @@ game::Board *game::Board::clone() const {
   return newBoard;
 }
 
+namespace game {
+
+std::istream &operator>>(std::istream &input, Board *&b) {
+  // Bookkeeping -> clear old board completely
+  while (!b->_move_stack.empty()) {
+    delete b->_move_stack.top();
+    b->_move_stack.pop();
+  }
+  b->_pawn_upgrade_type = piece::PieceType::NONE;
+  for (auto &p: b->_pieces)
+    delete p;
+  b->_pieces.clear();
+
+  // Load new board in
+  input >> b->_length >> b->_width;
+  int max_index = b->_length * b->_width;
+  b->_pieces.resize(max_index);
+
+  int ind;
+  std::string spacer;
+  for (int i = 0; i < max_index; ++i) {
+    input >> ind >> spacer;
+    assert(ind == i);
+
+    input >> b->_pieces[i];
+  }
+
+  return input;
+}
+
+std::ostream &operator<<(std::ostream &output, Board *&b) {
+  output << b->_length << " " << b->_width << std::endl;
+
+  for (int i = 0; i < b->_length * b->_width; ++i)
+    output << i << " - " << b->_pieces[i] << std::endl;
+
+  return output;
+}
+
+}
+
 void game::Board::loadFromFile(const std::string &fileName) {
   std::ifstream in_stream(fileName);
   assert(in_stream.is_open());
 
-  piece::Piece *piece;
-  std::string spacer, modifier;
-
-  int ind;
-  piece::PieceType type = piece::PieceType::NONE;
-  piece::PieceColor color = piece::PieceColor::NONE;
-
-  int total_count = _length * _width;
-  for (int i = 0; i < total_count; ++i) {
-    piece = _pieces[i];
-    _pieces[i] = nullptr;
-    delete piece;
-
-    in_stream >> ind >> spacer >> type >> color >> modifier;
-    assert(ind == i);
-    piece = type.getPieceOfType(color);
-
-    if (type.isPawn() || type.isRook() || type.isKing()) {
-      bool mod = string::boolean(modifier);
-
-      if (type.isPawn())
-        update_moved2x_flag((piece::Pawn *) piece, mod);
-      else if (type.isRook())
-        update_moved_flag((piece::Rook *) piece, mod);
-      else if (type.isKing())
-        update_moved_flag((piece::King *) piece, mod);
-    }
-
-    _pieces[i] = piece;
-  }
+  Board *b = this;
+  in_stream >> b;
 
   in_stream.close();
 }
@@ -425,7 +440,7 @@ bool game::Move::doMove(Board *board) {
       if (p->type().isPawn())
         if (((piece::Pawn *) p)->moved2x()) {
           addSettingChange(r, c, true);
-          update_moved2x_flag((piece::Pawn *) p, false);
+          update_flag((piece::Pawn *) p, false);
         }
     }
 
@@ -463,21 +478,21 @@ bool game::Move::doMove(Board *board) {
     case piece::PieceType::ROOK:
       if (!((piece::Rook *) piece)->moved()) {
         addSettingChange(r1, c1, false);
-        update_moved_flag((piece::Rook *) piece, true);
+        update_flag((piece::Rook *) piece, true);
       }
       break;
 
     case piece::PieceType::KING:
       if (!((piece::King *) piece)->moved()) {
         addSettingChange(r1, c1, false);
-        update_moved_flag((piece::King *) piece, true);
+        update_flag((piece::King *) piece, true);
       }
       break;
 
     case piece::PieceType::PAWN:
       if (abs(r1 - r2) == 2) {
         addSettingChange(r1, c1, false);
-        update_moved2x_flag((piece::Pawn *) piece, true);
+        update_flag((piece::Pawn *) piece, true);
       }
       break;
 
@@ -551,15 +566,15 @@ void game::Move::updateSetting(Board *board, int r, int c, bool setting) {
 
   switch (piece->type()) {
     case piece::PieceType::ROOK:
-      update_moved_flag((piece::Rook *) piece, setting);
+      update_flag((piece::Rook *) piece, setting);
       break;
 
     case piece::PieceType::KING:
-      update_moved_flag((piece::King *) piece, setting);
+      update_flag((piece::King *) piece, setting);
       break;
 
     case piece::PieceType::PAWN:
-      update_moved2x_flag((piece::Pawn *) piece, setting);
+      update_flag((piece::Pawn *) piece, setting);
       break;
 
     default:
@@ -597,8 +612,10 @@ void game::Move::undoMove(Board *board) const {
 }
 
 std::string game::Move::toString() const {
-  return "(" + std::to_string(_start_row) + ", " + std::to_string(_start_col) + ") to (" +
-         std::to_string(_end_row) + ", " + std::to_string(_end_col) + ") + " + _pawn_promotion_type.toString();
+  std::stringstream ss;
+  ss << "(" << _start_row << ", " << _start_col << ") to (" << _end_row << ", " << _end_col << ") -> "
+     << _pawn_promotion_type;
+  return ss.str();
 }
 
 // Game Class
@@ -727,8 +744,7 @@ bool game::Game::tryMove(const Move &move) {
   if (_moves_since_last_capture >= 50) { // 50 non-capture moves = Stalemate
     _over = true;
     _result = game::GameResult::STALEMATE;
-  }
-  else {
+  } else {
     // check for checkmate/stalemate
     generatePossibleMoveVectors();
     int movesSize = _current_player_color.isWhite() ? _white_moves.size(): _black_moves.size();

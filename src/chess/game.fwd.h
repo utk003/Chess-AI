@@ -3,6 +3,7 @@
 #define CHESS_AI_CHESS_GAME_FWD_H_
 
 #include <string>
+#include <cassert>
 
 // The "game" namespace is for all game related classes:
 //   - Move, Board, Game classes

@@ -22,8 +22,8 @@ void wait_for(const std::function<bool()> &exit_condition);
 void do_while_waiting_for(const std::function<void()> &to_do, const bool &exit_condition);
 void do_while_waiting_for(const std::function<void()> &to_do, const std::function<bool()> &exit_condition);
 
-template <class Fn, class... Args>
-inline void create(Fn&& fn, Args&&... args) {
+template<class Fn, class... Args>
+inline void create(Fn &&fn, Args &&... args) {
   std::thread(fn, args...).detach();
 }
 

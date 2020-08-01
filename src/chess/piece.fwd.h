@@ -62,38 +62,36 @@ class PieceColor {
     constexpr bool isBlack() const { return value == BLACK; }
     constexpr bool isColored() const { return value != NONE; }
 
-    std::string toString() const {
-      switch (value) {
-        case BLACK:
-          return "black";
-        case WHITE:
-          return "white";
-
-        case NONE:
-          return "none";
-
-        default:
-          assert(false);
-      }
-    }
-
-    static PieceColor fromString(const std::string &s) {
-      if (s == "black")
-        return BLACK;
-      if (s == "white")
-        return WHITE;
-      return NONE;
-    }
-
     friend std::istream &operator>>(std::istream &input, PieceColor &c) {
       std::string str;
       input >> str;
-      c.value = fromString(str);
+
+      if (str == "black")
+        c.value = BLACK;
+      else if (str == "white")
+        c.value = WHITE;
+      else
+        c.value = NONE;
+
       return input;
     }
 
     friend std::ostream &operator<<(std::ostream &output, PieceColor &c) {
-      output << c.toString();
+      switch (c.value) {
+        case BLACK:
+          output << "black";
+          break;
+        case WHITE:
+          output << "white";
+          break;
+
+        case NONE:
+          output << "none";
+          break;
+
+        default:
+          assert(false);
+      }
       return output;
     }
 
@@ -154,57 +152,59 @@ class PieceType {
     constexpr bool isPawn() const { return value == PAWN; }
     constexpr bool isEmpty() const { return value == NONE; }
 
-    std::string toString() const {
-      switch (value) {
-        case KING:
-          return "king";
-        case QUEEN:
-          return "queen";
-        case ROOK:
-          return "rook";
-        case KNIGHT:
-          return "knight";
-        case BISHOP:
-          return "bishop";
-        case PAWN:
-          return "pawn";
-
-        case NONE:
-          return "none";
-
-        default:
-          assert(false);
-      }
-    }
-
     inline Piece *getPieceOfType(PieceColor c) const { return getPieceOfType(*this, c); }
     static Piece *getPieceOfType(PieceType t, PieceColor c);
-
-    static PieceType fromString(const std::string &s) {
-      if (s == "king")
-        return KING;
-      if (s == "queen")
-        return QUEEN;
-      if (s == "rook")
-        return ROOK;
-      if (s == "knight")
-        return KNIGHT;
-      if (s == "bishop")
-        return BISHOP;
-      if (s == "pawn")
-        return PAWN;
-      return NONE;
-    }
 
     friend std::istream &operator>>(std::istream &input, PieceType &t) {
       std::string str;
       input >> str;
-      t.value = fromString(str);
+
+      if (str == "king")
+        t.value = KING;
+      else if (str == "queen")
+        t.value = QUEEN;
+      else if (str == "rook")
+        t.value = ROOK;
+      else if (str == "knight")
+        t.value = KNIGHT;
+      else if (str == "bishop")
+        t.value = BISHOP;
+      else if (str == "pawn")
+        t.value = PAWN;
+      else
+        t.value = NONE;
+
       return input;
     }
 
     friend std::ostream &operator<<(std::ostream &output, PieceType &t) {
-      output << t.toString();
+      switch (t.value) {
+        case KING:
+          output << "king";
+          break;
+        case QUEEN:
+          output << "queen";
+          break;
+        case ROOK:
+          output << "rook";
+          break;
+        case KNIGHT:
+          output << "knight";
+          break;
+        case BISHOP:
+          output << "bishop";
+          break;
+        case PAWN:
+          output << "pawn";
+          break;
+
+        case NONE:
+          output << "none";
+          break;
+
+        default:
+          assert(false);
+      }
       return output;
     }
 

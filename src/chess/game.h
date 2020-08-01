@@ -45,7 +45,8 @@ class Board : piece::PieceManager {
       return 0 <= r && r < _length && 0 <= c && c < _width;
     }
 
-    [[nodiscard]] std::string toString() const;
+    friend std::istream &operator>>(std::istream &input, Board *&b);
+    friend std::ostream &operator<<(std::ostream &output, Board *&b);
 
     [[nodiscard]] int getPositionThreats(int r, int c, piece::PieceColor kingColor) const; // returns # of threats
     [[nodiscard]] inline bool isPositionSafe(int r, int c, piece::PieceColor kingColor) const {
@@ -178,7 +179,6 @@ class Game : BoardController, piece::PieceManager {
 
     [[nodiscard]] inline Board *board() const { return _board; }
     [[nodiscard]] inline piece::Piece *getPiece(int r, int c) const { return _board->getPiece(r, c); }
-    [[nodiscard]] inline std::string toString() const { return _board->toString(); }
 
     [[nodiscard]] inline piece::PieceColor getCurrentColor() const { return _current_player_color; }
 
@@ -190,8 +190,8 @@ class Game : BoardController, piece::PieceManager {
 
     [[nodiscard]] inline GameResult getResult() const { return _result; }
 
-    inline player::Player *white_player() const { return _white_player; }
-    inline player::Player *black_player() const { return _black_player; }
+    [[nodiscard]] inline player::Player *white_player() const { return _white_player; }
+    [[nodiscard]] inline player::Player *black_player() const { return _black_player; }
 
     void setPlayer(piece::PieceColor color, player::PlayerType type);
 

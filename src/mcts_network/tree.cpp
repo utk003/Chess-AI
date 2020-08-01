@@ -15,14 +15,14 @@
 #include "../util/util.h"
 
 // Node class
-tree::Node::Node(piece::PieceColor col) : Node(0.0f, col) {}
+tree::Node::Node(piece::PieceColor col) : Node(0.0, col) {}
 tree::Node::Node(double prior, piece::PieceColor col) {
   _priority = prior;
 
   _expanded = false;
 
   _visit_count = 0;
-  _value_sum = 0.0f;
+  _value_sum = 0.0;
 
   _color_to_play = col;
 }
@@ -52,7 +52,7 @@ void tree::Node::increase_value(double inc) {
   _value_sum += inc;
 }
 double tree::Node::value() const {
-  return _visit_count > 0 ? _value_sum / _visit_count: 0.0f;
+  return _visit_count > 0 ? _value_sum / _visit_count: 0.0;
 }
 
 piece::PieceColor tree::Node::color_to_play() {
@@ -78,12 +78,12 @@ bool tree::Node::expand(const std::map<game::Move, double> &weights, double sum_
 void tree::Node::addNoise(double frac, const double *noise) {
   int i = 0;
   for (auto &it : _children)
-    it.second->_priority = it.second->_priority * (1.0f - frac) + noise[i++] * frac;
+    it.second->_priority = it.second->_priority * (1.0 - frac) + noise[i++] * frac;
 }
 
 std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::function<double(Node *, Node *)> &ranker) {
   std::pair<game::Move, Node *> optimal{game::Move(-1, -1, 8, 8, piece::PieceType::NONE), nullptr};
-  double max_score = -1.0f, score;
+  double max_score = -1000000.0, score;
 
   for (auto &it : _children) {
     score = ranker(this, it.second);
@@ -144,17 +144,21 @@ tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::D
   assert(roots.size() >= num_threads);
 
   std::atomic_int counter{NUM_SIMULATIONS};
-  game::Game *clone = game->clone();
+  std::vector<game::Game *> clones(num_threads);
   for (int i = 0; i < num_threads; ++i) {
-    expand_node(roots[i], clone, move_ranker);
+    clones[i] = game->clone();
+
+    expand_node(roots[i], clones[i], move_ranker);
     add_dirichlet_noise(roots[i]);
 
-    thread::create(mcts, game, move_ranker, roots[i], std::ref(counter));
+    thread::create(mcts, clones[i], move_ranker, roots[i], std::ref(counter));
   }
 
-  delete clone;
-
   thread::wait_for([&] { return counter <= -num_threads; });
+
+  for (auto &clone: clones)
+    delete clone;
+  clones.clear();
 
   auto *master_node = Node::combineNodes(roots, num_threads);
   return {select_optimal_move(master_node).first, master_node};
@@ -234,8 +238,8 @@ std::pair<game::Move, tree::Node *> tree::MCTS::select_optimal_move(Node *parent
 
 // UCB algorithm
 double tree::MCTS::score_move(Node *parent, Node *child) {
-  const double BASE_MULTIPLIER_BASE = 1965.0; // Straight from Google/DeepMind's AlphaZero paper - 19652.0f original
-  const double BASE_MULTIPLIER_INIT = 2.75; // Straight from Google/DeepMind's AlphaZero paper - 1.25f original
+  const double BASE_MULTIPLIER_BASE = 1965.0; // Straight from Google/DeepMind's AlphaZero paper - 19652.0 original
+  const double BASE_MULTIPLIER_INIT = 2.75; // Straight from Google/DeepMind's AlphaZero paper - 1.25 original
 
   double base = log((parent->visit_count() + BASE_MULTIPLIER_BASE + 1.0) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
   base *= sqrt(log(parent->visit_count() + 1) / (child->visit_count() + 1)); // exploration term

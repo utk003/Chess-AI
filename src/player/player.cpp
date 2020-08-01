@@ -277,7 +277,7 @@ void player::AlphaBetaPlayer::playNextMove() {
     return;
   }
 
-  std::cout << "AI: " << _type.toString() << " (" << _color.toString() << ")" << std::endl;
+  std::cout << "AI: " << _type.toString() << " (" << _color << ")" << std::endl;
 
   thread::create(timeKeeper, this, _move_counter, 120); // set up 120 second thinking timer
 

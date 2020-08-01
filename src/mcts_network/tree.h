@@ -25,7 +25,7 @@ class Node {
     Node(const Node &n) = delete;
     Node &operator=(const Node &n) = delete;
 
-    explicit Node(piece::PieceColor col); // Default priority 0.0f -> for root node only
+    explicit Node(piece::PieceColor col); // Default priority 0.0 -> for root node only
     ~Node();
 
     [[nodiscard]] double priority() const;

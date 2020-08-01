@@ -28,7 +28,7 @@ Overall, I have made some decent progress in the past few days. A little bit mor
 
 July 27, 2020
 -------------
-Since the last push, we have had some major progress.
+Since the last push, I have had some major progress.
 
 A) The network is set up as a basic MLP with Gradient Descent/Backprop training. Eventually, I would like to set up NEAT, Q-Learning, or even CNNs for more effective training. However, the network *can* train now.
 
@@ -37,3 +37,18 @@ B) Major Code Cleanup: Formatting, Coding Style, etc.
 C) Switch to CMake over hardcoded makefile
 
 Now it's time to train!!
+
+
+
+July 31, 2020
+-------------
+No, it wasn't quite time to train yet.
+
+Changes:
+ - Network dump now actually works (doesn't hit max string size limit, etc.)
+ - Training logic has been completed
+ - Network dump implementation details have been finialized (kinda)
+ - Minor changes to MCTS algorithm
+ - Added missing #includes to allow for program to compile with GCC (https://gcc.gnu.org/)
+
+I've already had some minor success training the network. However, it's slow going, and, while training, my computer becomes a hot stove. I'm going to need to find a better way to train this network...

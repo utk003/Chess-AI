@@ -1,10 +1,9 @@
 #include "piece.h"
 
 #include <string>
+#include <sstream>
 
 #include "game.h"
-#include "../util/math_util.h"
-#include "../util/string_util.h"
 
 // PieceType class
 piece::Piece *piece::PieceType::getPieceOfType(PieceType t, PieceColor c) {
@@ -45,7 +44,10 @@ piece::Piece::Piece(piece::PieceColor c, piece::PieceType t) {
   // Create a new Piece with the given color and type
   _color = c;
   _type = t;
-  _image_file_path = c.toString() + "_" + t.toString() + ".png";
+
+  std::stringstream ss;
+  ss << c << "_" << t << ".png";
+  _image_file_path = ss.str();
 }
 
 bool piece::Piece::verifyMove(const game::Move &move, game::Board *board) { return false; }
@@ -75,10 +77,6 @@ piece::Piece *piece::Piece::clone() const {
 
 int piece::Piece::code() const {
   return _type.typeCode() * _color.colorCode();
-}
-
-std::string piece::Piece::toString() const  {
-  return _type.toString() + " " + _color.toString() + " .";
 }
 
 // King Class
@@ -123,10 +121,6 @@ int piece::King::code() const {
   return _color.colorCode() * (_type.typeCode() + _moved * piece::PieceType::TYPE_CODE_DIFFERENCE / 2);
 }
 
-std::string piece::King::toString() const {
-  return _type.toString() + " " + _color.toString() + " " + string::string(_moved);
-}
-
 // Queen Class
 piece::Queen::Queen(piece::PieceColor c) : piece::Piece::Piece(c, piece::PieceType::QUEEN) {}
 
@@ -159,10 +153,6 @@ piece::Piece *piece::Rook::clone() const {
 
 int piece::Rook::code() const {
   return _color.colorCode() * (_type.typeCode() + _moved * piece::PieceType::TYPE_CODE_DIFFERENCE / 2);
-}
-
-std::string piece::Rook::toString() const {
-  return _type.toString() + " " + _color.toString() + " " + string::string(_moved);
 }
 
 // Knight Class
@@ -246,6 +236,117 @@ int piece::Pawn::code() const {
   return _color.colorCode() * (_type.typeCode() + _moved2x * piece::PieceType::TYPE_CODE_DIFFERENCE / 2);
 }
 
-std::string piece::Pawn::toString() const {
-  return _type.toString() + " " + _color.toString() + " " + string::string(_moved2x);
+// PieceManager class
+piece::Piece *piece::PieceManager::getPieceOfTypeAndColor(PieceType t, PieceColor c) {
+  return t.getPieceOfType(c);
+}
+piece::Piece *piece::PieceManager::getPieceOfTypeAndColor(PieceType t, PieceColor c, bool mod) {
+  Piece *p = t.getPieceOfType(c);
+  switch (t) {
+    case PieceType::KING:
+      update_flag((King *) p, mod);
+
+    case PieceType::ROOK:
+      update_flag((Rook *) p, mod);
+
+    case PieceType::PAWN:
+      update_flag((Pawn *) p, mod);
+
+    default:
+      return p;
+  }
+}
+
+// Piece to/from iostream
+namespace piece {
+
+std::istream &operator>>(std::istream &input, Piece *&p) {
+  delete p;
+
+  PieceType t = PieceType::NONE;
+  PieceColor c = PieceColor::NONE;
+  std::string mod;
+
+  input >> t >> c >> mod;
+  p = PieceManager::getPieceOfTypeAndColor(t, c, string::boolean(mod));
+
+  return input;
+}
+std::ostream &operator<<(std::ostream &output, Piece *&p) {
+  switch (p->_type) {
+    case PieceType::KING: {
+      auto *k = (King *) p;
+      output << k;
+      break;
+    }
+
+    case PieceType::QUEEN: {
+      auto *q = (Queen *) p;
+      output << q;
+      break;
+    }
+
+    case PieceType::ROOK: {
+      auto *r = (Rook *) p;
+      output << r;
+      break;
+    }
+
+    case PieceType::KNIGHT: {
+      auto *k = (Knight *) p;
+      output << k;
+      break;
+    }
+
+    case PieceType::BISHOP: {
+      auto *b = (Bishop *) p;
+      output << b;
+    }
+
+    case PieceType::PAWN: {
+      auto *pawn = (Pawn *) p;
+      output << pawn;
+      break;
+    }
+
+    case piece::PieceType::NONE:
+      output << p->_type << " " << p->_color << " " << ".";
+      break;
+
+    default:
+      assert(false);
+  }
+  return output;
+}
+
+std::ostream &operator<<(std::ostream &output, King *&k) {
+  output << k->_type << " " << k->_color << " " << string::string(k->_moved);
+  return output;
+}
+
+std::ostream &operator<<(std::ostream &output, Queen *&q) {
+  output << q->_type << " " << q->_color << " " << ".";
+  return output;
+}
+
+std::ostream &operator<<(std::ostream &output, Rook *&r) {
+  output << r->_type << " " << r->_color << " " << string::string(r->_moved);
+  return output;
+}
+
+std::ostream &operator<<(std::ostream &output, Knight *&k) {
+  output << k->_type << " " << k->_color << " " << ".";
+  return output;
+}
+
+std::ostream &operator<<(std::ostream &output, Bishop *&b) {
+  output << b->_type << " " << b->_color << " " << ".";
+  return output;
+}
+
+std::ostream &operator<<(std::ostream &output, Pawn *&p) {
+  output << p->_type << " " << p->_color << " " << string::string(p->_moved2x);
+  return output;
+}
+
 }

@@ -188,7 +188,7 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode
       case GLFW_KEY_S:
         std::ofstream myfile;
         myfile.open("../game_state/save " + std::to_string(_file_save_counter++) + ".txt");
-        myfile << _board->toString();
+        myfile << _board;
         myfile.close();
         break;
     }
