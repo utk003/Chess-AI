@@ -4,6 +4,8 @@
 #include <sstream>
 
 #include "game.h"
+#include "../util/string_util.h"
+#include "../util/math_util.h"
 
 // PieceType class
 piece::Piece *piece::PieceType::getPieceOfType(PieceType t, PieceColor c) {
@@ -24,8 +26,7 @@ piece::Piece *piece::PieceType::getPieceOfType(PieceType t, PieceColor c) {
     case NONE:
       return new Piece();
 
-    default:
-      assert(false);
+    default: fatal_assert();
   }
 }
 
@@ -39,7 +40,7 @@ piece::Piece::Piece() {
 
 piece::Piece::Piece(piece::PieceColor c, piece::PieceType t) {
   // Must be a valid color -AND- Must be a non-empty piece
-  assert(c.isColored() && !t.isEmpty());
+  if (!c.isColored() || t.isEmpty()) fatal_assert();
 
   // Create a new Piece with the given color and type
   _color = c;
@@ -313,8 +314,7 @@ std::ostream &operator<<(std::ostream &output, Piece *&p) {
       output << p->_type << " " << p->_color << " " << ".";
       break;
 
-    default:
-      assert(false);
+    default: fatal_assert();
   }
   return output;
 }

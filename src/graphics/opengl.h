@@ -1,7 +1,7 @@
 #ifndef CHESS_AI_GRAPHICS_OPENGL_H_
 #define CHESS_AI_GRAPHICS_OPENGL_H_
 
-#define GL_SILENCE_DEPRECATION
+//#define GL_SILENCE_DEPRECATION
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -44,7 +44,7 @@ class OpenGL {
 
     static GLuint getTextureBuffer();
 
-    static GLuint loadTexture(const std::string &fileName);
+    static void loadTexture(const std::string &fileName, std::map<std::string, GLuint> &text_map);
 
     void loadTextures();
 

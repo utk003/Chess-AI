@@ -33,7 +33,7 @@ class Player {
     piece::PieceColor _color{};
     player::PlayerType _type{};
 
-    void playMove(const game::Move& m);
+    void playMove(const game::Move &m);
     void playRandomMove();
 };
 

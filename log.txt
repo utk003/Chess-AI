@@ -52,3 +52,9 @@ Changes:
  - Added missing #includes to allow for program to compile with GCC (https://gcc.gnu.org/)
 
 I've already had some minor success training the network. However, it's slow going, and, while training, my computer becomes a hot stove. I'm going to need to find a better way to train this network...
+
+
+
+August 3, 2020
+--------------
+Minor changes to code/readme

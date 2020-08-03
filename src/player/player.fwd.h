@@ -5,6 +5,7 @@
 
 #include "../chess/piece.fwd.h"
 #include "../chess/game.fwd.h"
+#include "../util/assert_util.h"
 
 namespace player {
 
@@ -58,8 +59,7 @@ class PlayerType {
         case AI:
           return "AI Network Player";
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
     }
 

@@ -3,7 +3,8 @@
 #define CHESS_AI_CHESS_GAME_FWD_H_
 
 #include <string>
-#include <cassert>
+
+#include "../util/assert_util.h"
 
 // The "game" namespace is for all game related classes:
 //   - Move, Board, Game classes
@@ -49,6 +50,8 @@ class GameResult {
 
         case NONE:
           return "none";
+
+        default: fatal_assert();
       }
     }
 
@@ -63,8 +66,7 @@ class GameResult {
         case NONE:
           return 0;
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
     }
 

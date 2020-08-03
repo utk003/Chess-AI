@@ -8,7 +8,6 @@
 #include <string>
 
 #include "game.fwd.h"
-#include "../util/util.h"
 
 // The "piece" namespace: See piece.fwd.h
 namespace piece {
@@ -18,7 +17,7 @@ namespace piece {
 //   - Methods to access the piece's color, type, and image file path through color(), type(), and image_file_path(), respectively
 //   - A vitual method verifyMove(...) which each extending class changes to accurately evaluate whether the move is valid
 //   - A virtual clone() method which returns a deep copy of the current piece
-//     all of the essential information needed to create a deep reconstruction of the Piece
+//   - iostream compatibility w/ << and >>
 class Piece {
   public:
     Piece(const Piece &p) = delete;
@@ -42,11 +41,11 @@ class Piece {
   protected:
     Piece(PieceColor c, PieceType t);
 
-    PieceColor _color{};
+    PieceColor _color;
+    PieceType _type;
     std::string _image_file_path;
 
     static bool checkClearMovePath(game::Board *board, int r1, int c1, int r2, int c2);
-    PieceType _type{};
 };
 
 // The King class: See piece.fwd.h && piece::Piece class

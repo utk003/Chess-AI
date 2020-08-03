@@ -4,15 +4,13 @@
 #include <iostream>
 #include <vector>
 #include <set>
-#include <functional>
 #include <utility>
-#include <algorithm>
 
 #include "../chess/piece.h"
 #include "../chess/game.h"
 #include "../mcts_network/network.h"
 #include "../mcts_network/tree.h"
-#include "../util/util.h"
+#include "../util/thread_util.h"
 
 // PlayerType class
 player::Player *player::PlayerType::getPlayerOfType(PlayerType type, game::Game *game, piece::PieceColor color) {
@@ -30,8 +28,7 @@ player::Player *player::PlayerType::getPlayerOfType(PlayerType type, game::Game 
     case AI:
       return new NetworkAIPlayer(game, color);
 
-    default:
-      assert(false);
+    default: fatal_assert();
   }
 }
 
@@ -48,7 +45,11 @@ player::Player::~Player() = default;
 
 void player::Player::playMove(const game::Move &m) {
   _game->board()->set_pawn_upgrade_type(piece::PieceType::QUEEN); // Default in case move "forgot" it???
-  assert(_game->tryMove(m)); // Move must succeed
+  bool move_result = _game->tryMove(m);
+  if (!move_result) { // Move must succeed
+    debug_assert();
+    playNextMove();
+  }
 }
 
 void player::Player::playRandomMove() {

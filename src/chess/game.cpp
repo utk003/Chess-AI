@@ -2,16 +2,14 @@
 
 #include <string>
 #include <cassert>
-#include <memory>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <vector>
 #include <utility>
-#include <functional>
 
 #include "piece.h"
-#include "../util/util.h"
+#include "../util/thread_util.h"
 
 // Board Class
 game::Board::Board(int l, int w) {
@@ -43,7 +41,10 @@ game::Board::~Board() {
 }
 
 int game::Board::getPositionThreats(int r, int c, piece::PieceColor kingColor) const {
-  assert(isValidPosition(r, c));
+  if (!isValidPosition(r, c)) {
+    debug_assert();
+    return 0;
+  }
 
   piece::PieceColor enemyColor = !kingColor;
   int x, y, dangerCounter = 0;
@@ -166,7 +167,10 @@ std::pair<int, int> game::Board::getKingPosition(piece::PieceColor color) const 
 
 bool game::Board::canPieceMove(int r, int c, int toR, int toC) {
   piece::PieceColor pieceColor = _pieces[locMap(r, c)]->color();
-  assert(pieceColor.isColored());
+  if (!pieceColor.isColored()) {
+    debug_assert();
+    return false;
+  }
 
   // get piece indices
   int from = locMap(r, c), to = locMap(toR, toC);
@@ -290,9 +294,10 @@ std::istream &operator>>(std::istream &input, Board *&b) {
   std::string spacer;
   for (int i = 0; i < max_index; ++i) {
     input >> ind >> spacer;
-    assert(ind == i);
-
-    input >> b->_pieces[i];
+    if (ind == i)
+      input >> b->_pieces[i];
+    else
+      debug_assert(); // -> Malformed input file!!
   }
 
   return input;
@@ -311,7 +316,10 @@ std::ostream &operator<<(std::ostream &output, Board *&b) {
 
 void game::Board::loadFromFile(const std::string &fileName) {
   std::ifstream in_stream(fileName);
-  assert(in_stream.is_open());
+  if (!in_stream.is_open()) {
+    debug_assert();
+    return; // meh -> no open file -> who cares
+  }
 
   Board *b = this;
   in_stream >> b;
@@ -337,8 +345,6 @@ std::vector<game::Move> game::Move::getMoves(int r1, int c1, int r2, int c2, gam
 }
 
 game::Move::Move(int r1, int c1, int r2, int c2, piece::PieceType promotionType) {
-  assert(!(r1 == r2 && c1 == c2));
-
   _start_row = r1;
   _start_col = c1;
   _end_row = r2;
@@ -540,7 +546,11 @@ bool game::Move::doMove(Board *board) {
           }
         }
 
-        assert(newPiece != nullptr);
+        // timer hit 600 <--> Program time out
+        if (newPiece == nullptr) {
+          debug_assert();
+          exit(-1);
+        }
 
         addReplacedPiece(r1, c1, piece);
         pieces[locMap(board, r2, c2)] = newPiece;
@@ -653,7 +663,10 @@ game::Game::~Game() {
 }
 
 void game::Game::setPlayer(piece::PieceColor color, player::PlayerType type) {
-  assert(color.isColored());
+  if (!color.isColored()) {
+    debug_assert();
+    return;
+  }
 
   player::Player *player = type.getPlayerOfType(this, color);
 
@@ -664,14 +677,29 @@ void game::Game::setPlayer(piece::PieceColor color, player::PlayerType type) {
 }
 
 void game::Game::startGame() {
-  assert(_white_player != nullptr);
-  assert(_black_player != nullptr);
+  if (_white_player == nullptr) {
+    debug_assert();
+    return;
+  }
+  if (_black_player == nullptr) {
+    debug_assert();
+    return;
+  }
 
   _started = true;
 
   generatePossibleMoveVectors();
 
-  thread::create(play_game, this);
+  thread::create([&] {
+    while (!_over) {
+      _is_move_complete = false;
+      if (_current_player_color.isWhite())
+        _white_player->playNextMove();
+      else
+        _black_player->playNextMove();
+    }
+    _is_ready_to_delete = true;
+  });
 }
 
 void game::Game::endGame() {
@@ -704,8 +732,14 @@ game::Game *game::Game::clone() const {
 }
 
 void game::Game::selectSquare(int x, int y) {
-  assert(_started);
-  assert(_board->isValidPosition(x, y));
+  if (!_started) {
+    debug_assert();
+    return;
+  }
+  if (!_board->isValidPosition(x, y)) {
+    debug_assert();
+    return;
+  }
 
   // Reset pawn upgrade type for move
   _board->set_pawn_upgrade_type(piece::PieceType::NONE);

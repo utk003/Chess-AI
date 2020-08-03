@@ -12,7 +12,7 @@
 
 #include "../chess/game.h"
 #include "decider.h"
-#include "../util/util.h"
+#include "../util/thread_util.h"
 
 // Node class
 tree::Node::Node(piece::PieceColor col) : Node(0.0, col) {}
@@ -82,7 +82,7 @@ void tree::Node::addNoise(double frac, const double *noise) {
 }
 
 std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::function<double(Node *, Node *)> &ranker) {
-  std::pair<game::Move, Node *> optimal{game::Move(-1, -1, 8, 8, piece::PieceType::NONE), nullptr};
+  std::pair<game::Move, Node *> optimal{game::Move(-1, -1, -1, -1, piece::PieceType::NONE), nullptr};
   double max_score = -1000000.0, score;
 
   for (auto &it : _children) {
@@ -93,7 +93,8 @@ std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::fun
     }
   }
 
-  assert(optimal.second != nullptr);
+  if (optimal.second == nullptr)
+    debug_assert();
   return optimal;
 }
 
@@ -141,7 +142,10 @@ tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::D
 std::pair<game::Move, tree::Node *>
 tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::Decider *move_ranker,
                                    const std::vector<Node *> &roots) {
-  assert(roots.size() >= num_threads);
+  if (roots.size() < num_threads) {
+    debug_assert();
+    num_threads = roots.size();
+  }
 
   std::atomic_int counter{NUM_SIMULATIONS};
   std::vector<game::Game *> clones(num_threads);
@@ -199,7 +203,13 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
 
       std::pair<game::Move, Node *> optimal = select_optimal_move(node);
       node = optimal.second;
-      assert(clone->tryMove(optimal.first));
+      bool success = clone->tryMove(optimal.first);
+      if (!success) {
+        debug_assert();
+
+        delete clone;
+        return;
+      }
 
       searchPath.push_back(node);
       ++i;

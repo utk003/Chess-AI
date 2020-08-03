@@ -7,7 +7,7 @@
 #include "chess/game.h"
 #include "graphics/opengl.h"
 #include "mcts_network/network.h"
-#include "util/util.h"
+#include "util/thread_util.h"
 
 int run_game() {
   network::NetworkStorage::initialize();
@@ -119,7 +119,7 @@ int train_network() {
     // print iteration completion time
     std::chrono::system_clock::time_point time_on_start = std::chrono::system_clock::now();
     time_t time1 = std::chrono::system_clock::to_time_t(time_on_start);
-    std::cout << "Completed Iteration #" << i+1 << ": " << ctime(&time1);
+    std::cout << "Completed Iteration #" << i + 1 << ": " << ctime(&time1);
   }
 
   network::NetworkStorage::flushStorage(); // delete any stored networks
@@ -127,13 +127,15 @@ int train_network() {
 }
 
 int test() {
-  network::NetworkStorage::SAVE_NETWORKS = true;
-  network::NetworkStorage::initialize();
-  network::NetworkStorage::flushStorage();
+#if defined(__clang__)
+  std::cout << "clang" << std::endl;
+#elif defined(__GNUC__)
+  std::cout << "gcc" << std::endl;
+#endif
 
   return 0;
 }
 
 int main() {
-  return run_game();
+  return test();
 }

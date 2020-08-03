@@ -3,8 +3,9 @@
 #define CHESS_AI_CHESS_PIECE_FWD_H_
 
 #include <string>
-#include <cassert>
 #include <iostream>
+
+#include "../util/assert_util.h"
 
 // The "piece" namespace is for all piece related classes/methods:
 //   - PieceColor and PieceType "enums"
@@ -89,8 +90,7 @@ class PieceColor {
           output << "none";
           break;
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
       return output;
     }
@@ -104,8 +104,7 @@ class PieceColor {
         case NONE:
           return 0;
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
     }
 
@@ -202,8 +201,7 @@ class PieceType {
           output << "none";
           break;
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
       return output;
     }
@@ -229,8 +227,7 @@ class PieceType {
         case NONE:
           return 0;
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
     }
 
@@ -258,8 +255,7 @@ class PieceType {
         case NONE:
           return 0;
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
     }
 
@@ -282,8 +278,7 @@ class PieceType {
         case NONE:
           return 0;
 
-        default:
-          assert(false);
+        default: fatal_assert();
       }
     }
 

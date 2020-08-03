@@ -5,7 +5,6 @@
 #include <stb_image.h>
 
 #include <string>
-#include <utility>
 #include <fstream>
 
 #include "../chess/game.h"
@@ -22,7 +21,10 @@ graphics::OpenGL *graphics::OpenGL::get_instance(game::Game *game, const std::st
   auto *instance = new OpenGL(game, game_name);
   instance->initialize();
 
-  assert(instance->_window != nullptr);
+  if (instance->_window == nullptr) {
+    debug_assert();
+    return nullptr;
+  }
   _opengl_map[instance->_window] = instance;
 
   return instance;
@@ -35,14 +37,18 @@ graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
   asset_file_path_header = ASSETS_2D_FILE_PATH_HEADER;
 
   _white = game->white_player();
-  assert(_white != nullptr);
-  if (_white->type().isHumanPlayer())
-    _human_white = (player::HumanPlayer *) _white;
+  if (_white != nullptr) {
+    if (_white->type().isHumanPlayer())
+      _human_white = (player::HumanPlayer *) _white;
+  } else
+    debug_assert();
 
   _black = game->black_player();
-  assert(_black != nullptr);
-  if (_black->type().isHumanPlayer())
-    _human_black = (player::HumanPlayer *) _black;
+  if (_black != nullptr) {
+    if (_black->type().isHumanPlayer())
+      _human_black = (player::HumanPlayer *) _black;
+  } else
+    debug_assert();
 
   _game_name = game_name;
   _window_title = _game_name + ": " + _white->type().toString() + " vs " + _black->type().toString();
@@ -100,10 +106,13 @@ GLuint graphics::OpenGL::getTextureBuffer() {
   return vertexbuffer;
 }
 
-GLuint graphics::OpenGL::loadTexture(const std::string &fileName) {
+void graphics::OpenGL::loadTexture(const std::string &fileName, std::map<std::string, GLuint> &text_map) {
   int w, h, channels;
   stbi_uc *buf = stbi_load(fileName.c_str(), &w, &h, &channels, 4);
-  assert(buf != nullptr);
+  if (buf == nullptr) {
+    debug_assert();
+    return;
+  }
 
   GLuint textureID;
   glGenTextures(1, &textureID);
@@ -115,7 +124,7 @@ GLuint graphics::OpenGL::loadTexture(const std::string &fileName) {
 
   stbi_image_free(buf);
 
-  return textureID;
+  text_map[fileName] = textureID;
 }
 
 void graphics::OpenGL::loadTextures() {
@@ -128,16 +137,16 @@ void graphics::OpenGL::loadTextures() {
     for (const std::string &name: pieceNames)
       for (const std::string &pieceColor: pieceColors) {
         str = asset_file_path_header + "piece/" + backColor + "-" + pieceColor + "_" + name + ".png";
-        _texture_map[str] = loadTexture(str);
+        loadTexture(str, _texture_map);
       }
     str = asset_file_path_header + "piece/" + backColor + "-transparent.png";
-    _texture_map[str] = loadTexture(str);
+    loadTexture(str, _texture_map);
   }
 
   std::string boardUI[4] = {"selected", "previous_move", "normal_move", "attacking_move"};
   for (const std::string &name: boardUI) {
     str = asset_file_path_header + "overlay/" + name + ".png";
-    _texture_map[str] = loadTexture(str);
+    loadTexture(str, _texture_map);
   }
 }
 
@@ -199,7 +208,7 @@ void graphics::OpenGL::initialize() {
   // Initialize GLFW
   if (!glfwInit()) {
     fprintf(stderr, "Failed to initialize GLFW\n");
-    assert(false);
+    fatal_assert();
   }
 
   glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
@@ -214,7 +223,7 @@ void graphics::OpenGL::initialize() {
     fprintf(stderr,
             "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
     glfwTerminate();
-    assert(false);
+    fatal_assert();
   }
   glfwMakeContextCurrent(_window);
 
@@ -223,7 +232,7 @@ void graphics::OpenGL::initialize() {
   if (glewInit() != GLEW_OK) {
     fprintf(stderr, "Failed to initialize GLEW\n");
     glfwTerminate();
-    assert(false);
+    fatal_assert();
   }
 
   // Ensure we can capture the escape key being pressed below

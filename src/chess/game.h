@@ -3,19 +3,16 @@
 
 #include "game.fwd.h"
 
-#include <execinfo.h>
-#include <cstdio>
-
 #include <string>
-#include <cassert>
 #include <iostream>
 #include <vector>
 #include <map>
-#include <utility>
+#include <utility> // std::pair
 #include <stack>
 
 #include "piece.h"
 #include "../player/player.h"
+#include "../util/assert_util.h"
 
 // The "game" namespace: See game.fwd.h
 namespace game {
@@ -37,7 +34,10 @@ class Board : piece::PieceManager {
     [[nodiscard]] inline std::vector<piece::Piece *> pieces() const { return _pieces; }
 
     [[nodiscard]] inline piece::Piece *getPiece(int r, int c) const {
-      assert(isValidPosition(r, c));
+      if (!isValidPosition(r, c)) {
+        debug_assert();
+        return nullptr;
+      }
       return _pieces[locMap(r, c)];
     }
 
@@ -204,8 +204,6 @@ class Game : BoardController, piece::PieceManager {
     [[nodiscard]] std::vector<Move> possibleMoves() const;
     [[nodiscard]] std::vector<Move> possibleMoves(piece::PieceColor color) const;
 
-
-
     void selectSquare(int x, int y);
     bool tryMove(const Move &move);
 
@@ -218,29 +216,14 @@ class Game : BoardController, piece::PieceManager {
     player::Player *_black_player;
 
     bool _is_move_complete, _is_ready_to_delete;
-
-    void playGame() {
-      while (!_over) {
-        _is_move_complete = false;
-        if (_current_player_color.isWhite())
-          _white_player->playNextMove();
-        else
-          _black_player->playNextMove();
-      }
-      _is_ready_to_delete = true;
-    }
-
-    static inline void play_game(Game *g) { g->playGame(); }
-
     bool _started, _over;
 
     std::vector<Move> _white_moves, _black_moves;
-
     void generatePossibleMoveVectors();
 
     int _moves_since_last_capture;
 
-    GameResult _result{};
+    GameResult _result;
 };
 
 }

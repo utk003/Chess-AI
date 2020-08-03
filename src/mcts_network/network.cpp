@@ -9,14 +9,20 @@
 network::Network::Network() : Network({64, 144, 225, 100, 1}) {}
 
 network::Network::Network(std::vector<int> dims) {
-  assert(!dims.empty());
+  if (dims.empty()) {
+    debug_assert();
+    dims = {64, 144, 225, 100, 1};
+  } else {
+    if (dims[0] != 64)
+      dims.insert(dims.begin(), 64);
+    if (dims.back() != 1)
+      dims.push_back(1);
 
-  if (dims.front() != 64)
-    dims.insert(dims.begin(), 64);
-  if (dims.back() != 1)
-    dims.push_back(1);
-
-  assert(dims.size() > 2);
+    if (dims.size() <= 2) {
+      debug_assert();
+      dims = {64, 144, 225, 100, 1};
+    }
+  }
 
   updateInternals(dims);
 }
@@ -175,7 +181,10 @@ network::Network *network::Network::clone(Network *network) {
 
 network::Network *network::Network::loadFromFile(const std::string &file_path) {
   std::ifstream in_stream(file_path);
-  assert(in_stream.is_open());
+  if (!in_stream.is_open()) {
+    debug_assert();
+    return nullptr;
+  }
 
   Network *network = nullptr;
   in_stream >> network;
@@ -251,7 +260,8 @@ bool network::NetworkStorage::SAVE_NETWORKS = false;
 std::function<void(game::Board *)> network::NetworkStorage::_network_training_case;
 
 network::Network *network::NetworkStorage::current_network() {
-  assert (_current_network != nullptr);
+  if (_current_network == nullptr)
+    debug_assert();
   return _current_network;
 }
 
@@ -262,7 +272,10 @@ inline network::Network *create_network(Args &&... args) {
 }
 
 network::Network *network::NetworkStorage::initialize() {
-  assert (_current_network == nullptr);
+  if (_current_network != nullptr) {
+    debug_assert();
+    delete _current_network;
+  }
 
   _current_network = create_network();
   saveLatestNetwork();
@@ -270,7 +283,10 @@ network::Network *network::NetworkStorage::initialize() {
   return _current_network;
 }
 network::Network *network::NetworkStorage::initialize(const std::vector<int> &dims) {
-  assert (_current_network == nullptr);
+  if (_current_network != nullptr) {
+    debug_assert();
+    delete _current_network;
+  }
 
   _current_network = create_network(dims);
   saveLatestNetwork();
@@ -278,7 +294,10 @@ network::Network *network::NetworkStorage::initialize(const std::vector<int> &di
   return _current_network;
 }
 network::Network *network::NetworkStorage::initialize(const std::string &file_path) {
-  assert (_current_network == nullptr);
+  if (_current_network != nullptr) {
+    debug_assert();
+    delete _current_network;
+  }
 
   _current_network = network::Network::loadFromFile(file_path);
   saveLatestNetwork();

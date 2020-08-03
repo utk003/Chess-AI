@@ -1,5 +1,5 @@
-#ifndef CHESS_AI_UTIL_MATH_UTIL_H
-#define CHESS_AI_UTIL_MATH_UTIL_H
+#ifndef CHESS_AI_UTIL_MATH_UTIL_H_
+#define CHESS_AI_UTIL_MATH_UTIL_H_
 
 #include <type_traits>
 
@@ -51,4 +51,4 @@ bool chance(double prob);
 
 }
 
-#endif // CHESS_AI_UTIL_MATH_UTIL_H
+#endif // CHESS_AI_UTIL_MATH_UTIL_H_
