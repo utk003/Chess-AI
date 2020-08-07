@@ -45,8 +45,8 @@ player::Player::~Player() = default;
 
 void player::Player::playMove(const game::Move &m) {
   _game->board()->set_pawn_upgrade_type(piece::PieceType::QUEEN); // Default in case move "forgot" it???
-  bool move_result = _game->tryMove(m);
-  if (!move_result) { // Move must succeed
+  bool move_success = _game->tryMove(m);
+  if (!move_success) { // Move must succeed
     debug_assert();
     playNextMove();
   }
@@ -427,7 +427,7 @@ void player::NetworkAIPlayer::playNextMove() {
   std::pair<game::Move, tree::Node *> move_node_pair = tree::MCTS::run_mcts_multithreaded(_game, _move_ranker);
   playMove(move_node_pair.first);
 
-  network::NetworkStorage::saveBoard(_game->board());
+  network::NetworkStorage::saveBoard(_game->board(), move_node_pair.second);
 
   delete move_node_pair.second; // free memory to prevent memory leaks
 }

@@ -5,6 +5,8 @@
 #include <fstream>
 #include <cstdio>
 
+#include "tree.h"
+
 // Network class
 network::Network::Network() : Network({64, 144, 225, 100, 1}) {}
 
@@ -188,7 +190,6 @@ network::Network *network::Network::loadFromFile(const std::string &file_path) {
 
   Network *network = nullptr;
   in_stream >> network;
-
   in_stream.close();
 
   return network;
@@ -257,7 +258,7 @@ void network::Optimizer::optimize(Network *network, game::Board *input, const do
 network::Network *network::NetworkStorage::_current_network = nullptr;
 long network::NetworkStorage::_network_count = 0;
 bool network::NetworkStorage::SAVE_NETWORKS = false;
-std::function<void(game::Board *)> network::NetworkStorage::_network_training_case;
+std::function<void(game::Board *, double)> network::NetworkStorage::_network_training_case;
 
 network::Network *network::NetworkStorage::current_network() {
   if (_current_network == nullptr)
@@ -332,14 +333,14 @@ void network::NetworkStorage::flushStorage() {
   delete _current_network;
 }
 
-void network::NetworkStorage::saveBoard(const game::Board *board) {
+void network::NetworkStorage::saveBoard(const game::Board *board, const tree::Node *node) {
   if (_network_training_case) {
-    game::Board *copy = board->clone();
-    _network_training_case(copy);
-    delete copy;
+    game::Board *board_copy = board->clone();
+    _network_training_case(board_copy, node->value());
+    delete board_copy;
   }
 }
-void network::NetworkStorage::setTestCaseSelector(const std::function<void(game::Board *)> &selector) {
+void network::NetworkStorage::setTestCaseSelector(const std::function<void(game::Board *, double)> &selector) {
   _network_training_case = selector;
 }
 

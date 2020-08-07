@@ -58,3 +58,17 @@ I've already had some minor success training the network. However, it's slow goi
 August 3, 2020
 --------------
 Minor changes to code/readme
+
+
+
+August 6, 2020
+--------------
+Now training should work??!?!!??!?!
+
+Changes:
+  - Fixed segfault caused by illegal move attempt/nullptr dereferencing
+  - Fixed nan weights/priorities for MCTS tree nodes
+  - Fixed network returning values so large that exp(res) was overflowing to inf
+  - Updated CMakeLists.txt (forgot to do that last time!!)
+
+Now this should be able to train

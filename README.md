@@ -5,7 +5,7 @@ Fun with Chess and ANNs
 TODO Finish README (later)
 
 
-To build the project (at least, in its current state), you need CMake.
+To build the project (at least, in its current state), you need [CMake](https://cmake.org/).
 
 See logs.txt for a push-to-push change/update log, my thoughts on the project, and the issues I encountered/how I fixed them.
 

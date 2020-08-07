@@ -15,6 +15,7 @@
 #include "decider.h"
 #include "../chess/piece.fwd.h"
 #include "../chess/game.h"
+#include "tree.fwd.h"
 
 namespace network {
 
@@ -55,13 +56,14 @@ class Network : public decider::Decider {
     void propagate_for_training();
     void propagate_for_training(std::vector<std::vector<double>> &unbounded);
 
-    constexpr static double NEURON_THRESHOLD_VALUE = 16777216.0;
+    constexpr static double NEURON_THRESHOLD_MAX = 4.0;
+    constexpr static double NEURON_THRESHOLD_WIDTH = 4.0; // 16777216.0;
     [[nodiscard]] static inline double f(double x) {
-      return NEURON_THRESHOLD_VALUE * modifiedSigmoid(x / NEURON_THRESHOLD_VALUE);
+      return NEURON_THRESHOLD_MAX * modifiedSigmoid(x / NEURON_THRESHOLD_WIDTH);
     }
     [[nodiscard]] static inline double df(double x) {
-      const double sig = modifiedSigmoid(x / NEURON_THRESHOLD_VALUE);
-      return 1.0 - sig * sig;
+      const double sig = modifiedSigmoid(x / NEURON_THRESHOLD_WIDTH);
+      return NEURON_THRESHOLD_MAX * (1.0 - sig * sig) / NEURON_THRESHOLD_WIDTH;
     }
 
     // Sigmoid centered at (0,0) ranging from -1 to 1 w/ derivative = 1 @ (0,0)
@@ -137,8 +139,8 @@ class NetworkStorage : NetworkManager {
     static void saveNetwork();
     static void flushStorage();
 
-    static void saveBoard(const game::Board *board);
-    static void setTestCaseSelector(const std::function<void(game::Board *)> &selector);
+    static void saveBoard(const game::Board *board, const tree::Node *node);
+    static void setTestCaseSelector(const std::function<void(game::Board *, double)> &selector);
 
     static bool SAVE_NETWORKS;
 
@@ -150,7 +152,7 @@ class NetworkStorage : NetworkManager {
 
     static Network *_current_network;
     static long _network_count;
-    static std::function<void(game::Board *)> _network_training_case;
+    static std::function<void(game::Board *, double)> _network_training_case;
 };
 
 }

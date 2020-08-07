@@ -74,7 +74,7 @@ class Board : piece::PieceManager {
 
     [[nodiscard]] Board *clone() const;
 
-    void loadFromFile(const std::string &fileName);
+    bool loadFromFile(const std::string &fileName);
 
   private:
     int _length;
@@ -84,7 +84,13 @@ class Board : piece::PieceManager {
     std::stack<Move *> _move_stack;
     piece::PieceType _pawn_upgrade_type{};
 
-    [[nodiscard]] constexpr int locMap(int r, int c) const { return r * _width + c; };
+    [[nodiscard]] constexpr int locMap(int r, int c) const {
+      if (!isValidPosition(r, c)) {
+        debug_assert();
+        return -1;
+      }
+      return r * _width + c;
+    };
 };
 
 class BoardController {

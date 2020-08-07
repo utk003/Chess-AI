@@ -9,6 +9,7 @@
 #include <cmath>
 #include <functional>
 #include <atomic>
+#include <iostream>
 
 #include "../chess/game.h"
 #include "decider.h"
@@ -49,7 +50,7 @@ int tree::Node::visit_count() const {
 }
 
 void tree::Node::increase_value(double inc) {
-  _value_sum += inc;
+  _value_sum += std::abs(inc);
 }
 double tree::Node::value() const {
   return _visit_count > 0 ? _value_sum / _visit_count: 0.0;
@@ -83,7 +84,7 @@ void tree::Node::addNoise(double frac, const double *noise) {
 
 std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::function<double(Node *, Node *)> &ranker) {
   std::pair<game::Move, Node *> optimal{game::Move(-1, -1, -1, -1, piece::PieceType::NONE), nullptr};
-  double max_score = -1000000.0, score;
+  double max_score = -1.0, score = -1.0;
 
   for (auto &it : _children) {
     score = ranker(this, it.second);
@@ -93,8 +94,12 @@ std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::fun
     }
   }
 
-  if (optimal.second == nullptr)
-    debug_assert();
+  if (optimal.second == nullptr) {
+    std::cout << _children.size() << std::endl;
+    std::cout << optimal.first.toString() << std::endl;
+    std::cout << max_score << " " << score << std::endl;
+    fatal_assert();
+  }
   return optimal;
 }
 
@@ -248,14 +253,31 @@ std::pair<game::Move, tree::Node *> tree::MCTS::select_optimal_move(Node *parent
 
 // UCB algorithm
 double tree::MCTS::score_move(Node *parent, Node *child) {
-  const double BASE_MULTIPLIER_BASE = 1965.0; // Straight from Google/DeepMind's AlphaZero paper - 19652.0 original
-  const double BASE_MULTIPLIER_INIT = 2.75; // Straight from Google/DeepMind's AlphaZero paper - 1.25 original
+//  // Straight from Google/DeepMind's AlphaZero paper
+//  const double BASE_MULTIPLIER_BASE = 19652.0;    // original
+//  const double BASE_MULTIPLIER_INIT = 1.25;       // original
+//
+//  double base = log((parent->visit_count() + BASE_MULTIPLIER_BASE + 1.0) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
+//  base *= sqrt(parent -> visit_count()) / (child -> visit_count() + 1);
+
+  // Modified exploration scoring
+   const double BASE_MULTIPLIER_BASE = 1965.0;  // modified
+   const double BASE_MULTIPLIER_INIT = 2.75;    // modified
 
   double base = log((parent->visit_count() + BASE_MULTIPLIER_BASE + 1.0) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
   base *= sqrt(log(parent->visit_count() + 1) / (child->visit_count() + 1)); // exploration term
-  // original -> base *= sqrt(parent -> visit_count()) / (child -> visit_count() + 1);
-
   return base * child->priority() + child->value();
+
+//  double value = base * child->priority() + child->value();
+//  if (std::isnan(value)) {
+//    debug_assert();
+//    value = 0.0;
+//  }
+//  else if (value < 0.0) {
+//    debug_assert();
+//    value = 0.0;
+//  }
+//  return value;
 }
 
 double tree::MCTS::expand_node(tree::Node *node, game::Game *game, decider::Decider *move_ranker) {

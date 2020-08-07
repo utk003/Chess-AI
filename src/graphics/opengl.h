@@ -1,8 +1,6 @@
 #ifndef CHESS_AI_GRAPHICS_OPENGL_H_
 #define CHESS_AI_GRAPHICS_OPENGL_H_
 
-//#define GL_SILENCE_DEPRECATION
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -22,7 +20,6 @@ namespace graphics {
 class OpenGL {
   public:
     static void run_graphics(game::Game *game, const std::string &game_name);
-
     static OpenGL *get_instance(game::Game *game, const std::string &game_name);
 
     ~OpenGL();
@@ -41,26 +38,22 @@ class OpenGL {
     void initialize();
 
     static GLuint getCoordBuffer(int r, int c);
-
     static GLuint getTextureBuffer();
 
     static void loadTexture(const std::string &fileName, std::map<std::string, GLuint> &text_map);
-
     void loadTextures();
 
     void renderSquare(int r, int c, GLuint textbuff, const std::string &image_file_path);
 
+    void mouseClicked(GLFWwindow *window, int button, int action, int mods);
     inline static void onMouseButtonClick(GLFWwindow *window, int button, int action, int mods) {
       _opengl_map[window]->mouseClicked(window, button, action, mods);
     }
 
+    void keyboardPressed(GLFWwindow *window, int key, int scancode, int action, int mods);
     inline static void onKeyboardKeyPress(GLFWwindow *window, int key, int scancode, int action, int mods) {
       _opengl_map[window]->keyboardPressed(window, key, scancode, action, mods);
     }
-
-    void mouseClicked(GLFWwindow *window, int button, int action, int mods);
-
-    void keyboardPressed(GLFWwindow *window, int key, int scancode, int action, int mods);
 
     inline void promotionHelper(piece::PieceType type) {
       if (_human_white != nullptr)

@@ -26,10 +26,12 @@ set(SRC_PLAYER_PLAYER src/player/player.fwd.h src/player/player.h  src/player/pl
 set(SRC_PLAYER_DIR ${SRC_PLAYER_PLAYER})
 
 # src/util directory
-set(SRC_UTIL_UTIL src/util/util.h src/util/util.cpp)
 set(SRC_UTIL_MATH_UTIL src/util/math_util.h src/util/math_util.cpp)
 set(SRC_UTIL_STRING_UTIL src/util/string_util.h src/util/string_util.cpp)
-set(SRC_UTIL_DIR ${SRC_UTIL_UTIL} ${SRC_UTIL_MATH_UTIL} ${SRC_UTIL_STRING_UTIL})
+set(SRC_UTIL_THREAD_UTIL src/util/string_util.h src/util/thread_util.cpp)
+set(SRC_UTIL_ASSERT_UTIL src/util/assert_util.h)
+
+set(SRC_UTIL_DIR ${SRC_UTIL_MATH_UTIL} ${SRC_UTIL_STRING_UTIL} ${SRC_UTIL_THREAD_UTIL} ${SRC_UTIL_ASSERT_UTIL})
 
 # src directory
 set(SRC_DIR ${MAIN_FILE} ${SRC_CHESS_DIR} ${SRC_GRAPHICS_DIR} ${SRC_MCTS_NETWORK_DIR} ${SRC_PLAYER_DIR} ${SRC_UTIL_DIR})
@@ -47,3 +49,10 @@ target_link_libraries(Chess_AI "glfw3 -framework Cocoa -framework OpenGL -framew
 target_link_libraries(Chess_AI glew)
 target_link_libraries(Chess_AI gsl)
 target_link_libraries(Chess_AI gslcblas)
+
+# Debug/Release Macros
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    target_compile_definitions(Chess_AI PUBLIC DEBUG=1)
+else ()
+    target_compile_definitions(Chess_AI PUBLIC DEBUG=0)
+endif ()

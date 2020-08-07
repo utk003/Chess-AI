@@ -2,6 +2,7 @@
 #define CHESS_AI_UTIL_MATH_UTIL_H_
 
 #include <type_traits>
+#include <utility>
 
 namespace math {
 
@@ -46,8 +47,12 @@ int random(int min, int max);
 // [0, size-1]
 int random(int size);
 
-// true with probability prob
-bool chance(double prob);
+// clamp x to [range.first, range.second]
+void clamp(double &x, std::pair<double, double> range);
+void clamp(float &x, std::pair<float, float> range);
+
+// true with probability p
+bool chance(double p);
 
 }
 

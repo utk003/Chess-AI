@@ -1,9 +1,10 @@
 #include "math_util.h"
 
 #include <random>
-#include <string>
 #include <chrono>
 #include <ctime>
+
+#include "assert_util.h"
 
 double run_randomizer() {
   static std::chrono::system_clock::time_point time_on_start = std::chrono::system_clock::now();
@@ -39,8 +40,36 @@ int math::random(int min, int max) {
 // [0, size-1]
 int math::random(int size) { return random(0, size-1); }
 
-// true with probability prob
-bool math::chance(double prob) {
-  prob = prob > 1.0 ? 1.0: prob < 0.0 ? 0.0: prob; // limit prob to between 0 and 1
-  return random() < prob;
+// clamp x to [range.first, range.second]
+void math::clamp(double &x, std::pair<double, double> range) {
+  if (range.first > range.second) {
+    debug_assert();
+    double temp = range.first;
+    range.first = range.second;
+    range.second = temp;
+  }
+
+  if (x < range.first)
+    x = range.first;
+  else if (x > range.second)
+    x = range.second;
+}
+void math::clamp(float &x, std::pair<float, float> range) {
+  if (range.first > range.second) {
+    debug_assert();
+    double temp = range.first;
+    range.first = range.second;
+    range.second = temp;
+  }
+
+  if (x < range.first)
+    x = range.first;
+  else if (x > range.second)
+    x = range.second;
+}
+
+// true with probability p
+bool math::chance(double p) {
+  clamp(p, {0.0, 1.0}); // clamp p to [0.0, 1.0]
+  return random() < p;
 }

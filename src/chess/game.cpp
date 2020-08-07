@@ -166,14 +166,19 @@ std::pair<int, int> game::Board::getKingPosition(piece::PieceColor color) const 
 }
 
 bool game::Board::canPieceMove(int r, int c, int toR, int toC) {
-  piece::PieceColor pieceColor = _pieces[locMap(r, c)]->color();
-  if (!pieceColor.isColored()) {
+  // get piece indices
+  int from = locMap(r, c), to = locMap(toR, toC);
+  if (from < 0 || to < 0) {
     debug_assert();
     return false;
   }
 
-  // get piece indices
-  int from = locMap(r, c), to = locMap(toR, toC);
+  // get pieces
+  piece::PieceColor pieceColor = _pieces[from]->color();
+  if (!pieceColor.isColored()) {
+    debug_assert();
+    return false;
+  }
 
   // save replaced piece (b/c to is overwritten by from)
   piece::Piece *copy = _pieces[to];
@@ -201,17 +206,20 @@ void game::Board::getMovesFromSquare(int r, int c, std::vector<game::Move> *move
   if (moves == nullptr)
     return;
 
-  int r2, c2;
-  for (r2 = 0; r2 < 8; ++r2)
-    for (c2 = 0; c2 < 8; ++c2) {
-      if (r == r2 && c == c2)
-        continue;
+  if (isValidPosition(r,c)) {
+    int r2, c2;
+    for (r2 = 0; r2 < 8; ++r2)
+      for (c2 = 0; c2 < 8; ++c2) {
+        if (r == r2 && c == c2)
+          continue;
 
-      std::vector<Move> poss_moves = Move::getMoves(r, c, r2, c2, this);
-      for (const Move &move: poss_moves)
-        if (move.verify(this))
-          moves->push_back(move);
-    }
+        std::vector<Move> poss_moves = Move::getMoves(r, c, r2, c2, this);
+        for (const Move &move: poss_moves)
+          if (move.verify(this))
+            moves->push_back(move);
+      }
+  } else
+    debug_assert();
 }
 
 void game::Board::getPossibleMoves(std::vector<game::Move> *white, std::vector<game::Move> *black) {
@@ -233,6 +241,10 @@ void game::Board::getPossibleMoves(std::vector<game::Move> *white, std::vector<g
 }
 
 bool game::Board::doMove(Move *move, Game *game) {
+  if (move == nullptr) {
+    debug_assert();
+    return false;
+  }
   _move_stack.push(move);
 
   bool isCaptureMove = move->doMove(this);
@@ -244,8 +256,10 @@ bool game::Board::doMove(Move *move, Game *game) {
 }
 
 void game::Board::undoMove(Game *game) {
-  if (_move_stack.empty())
+  if (_move_stack.empty()) {
+    debug_assert();
     return;
+  }
 
   Move *move = _move_stack.top();
   move->undoMove(this);
@@ -298,6 +312,7 @@ std::istream &operator>>(std::istream &input, Board *&b) {
       input >> b->_pieces[i];
     else
       debug_assert(); // -> Malformed input file!!
+    getline(input, spacer); // skip to end of line
   }
 
   return input;
@@ -314,32 +329,35 @@ std::ostream &operator<<(std::ostream &output, Board *&b) {
 
 }
 
-void game::Board::loadFromFile(const std::string &fileName) {
+bool game::Board::loadFromFile(const std::string &fileName) {
   std::ifstream in_stream(fileName);
   if (!in_stream.is_open()) {
     debug_assert();
-    return; // meh -> no open file -> who cares
+    return false; // meh -> no open file -> who cares
   }
 
   Board *b = this;
   in_stream >> b;
-
   in_stream.close();
+
+  return true;
 }
 
 // Move Class
 std::vector<game::Move> game::Move::getMoves(int r1, int c1, int r2, int c2, game::Board *b) {
+  std::vector<game::Move> moves;
   piece::Piece *piece = b->getPiece(r1, c1);
 
-  std::vector<game::Move> moves;
-
-  if (piece->type().isPawn() && (r2 == 0 || r2 == 7)) {
-    moves.emplace_back(r1, c1, r2, c2, piece::PieceType::QUEEN);
-    moves.emplace_back(r1, c1, r2, c2, piece::PieceType::ROOK);
-    moves.emplace_back(r1, c1, r2, c2, piece::PieceType::KNIGHT);
-    moves.emplace_back(r1, c1, r2, c2, piece::PieceType::BISHOP);
+  if (piece != nullptr) {
+    if (piece->type().isPawn() && (r2 == 0 || r2 == 7)) {
+      moves.emplace_back(r1, c1, r2, c2, piece::PieceType::QUEEN);
+      moves.emplace_back(r1, c1, r2, c2, piece::PieceType::ROOK);
+      moves.emplace_back(r1, c1, r2, c2, piece::PieceType::KNIGHT);
+      moves.emplace_back(r1, c1, r2, c2, piece::PieceType::BISHOP);
+    } else
+      moves.emplace_back(r1, c1, r2, c2, piece::PieceType::NONE);
   } else
-    moves.emplace_back(r1, c1, r2, c2, piece::PieceType::NONE);
+    debug_assert();
 
   return moves;
 }
@@ -398,10 +416,16 @@ game::Move &game::Move::operator=(const Move &m) {
 
 bool game::Move::verify(Board *board) const {
   // Implicit calls to:
-  // assert(_board -> isValidPosition(_start_row, _start_col));
-  // assert(_board -> isValidPosition(_end_row, _end_col));
   piece::Piece *p1 = board->getPiece(_start_row, _start_col);
+  if (p1 == nullptr) {
+    debug_assert();
+    return false;
+  }
   piece::Piece *p2 = board->getPiece(_end_row, _end_col);
+  if (p2 == nullptr) {
+    debug_assert();
+    return false;
+  }
 
   if (p1->type().isEmpty()) // fail if not moving a piece
     return false;
@@ -548,8 +572,8 @@ bool game::Move::doMove(Board *board) {
 
         // timer hit 600 <--> Program time out
         if (newPiece == nullptr) {
-          debug_assert();
-          exit(-1);
+          std::cout << "Program timed out" << std::endl;
+          fatal_assert();
         }
 
         addReplacedPiece(r1, c1, piece);

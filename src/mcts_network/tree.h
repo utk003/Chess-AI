@@ -57,7 +57,7 @@ class Node {
     int _visit_count;
     double _value_sum;
 
-    piece::PieceColor _color_to_play{};
+    piece::PieceColor _color_to_play;
     std::map<game::Move, Node *> _children;
 };
 

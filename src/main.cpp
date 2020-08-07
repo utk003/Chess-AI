@@ -2,6 +2,7 @@
 #include <functional>
 #include <chrono>
 #include <ctime>
+#include <utility>
 
 #include "chess/piece.fwd.h"
 #include "chess/game.h"
@@ -61,7 +62,8 @@ game::GameResult create_game_training_case() {
   return result;
 }
 
-void run_training_iteration(std::vector<game::Board *> &boards_to_train_on, const int TRAINING_INDEX) {
+void
+run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_train_on, const int TRAINING_INDEX) {
 //  // Start time
 //  std::chrono::system_clock::time_point time_on_start = std::chrono::system_clock::now();
 //  time_t time1 = std::chrono::system_clock::to_time_t(time_on_start);
@@ -85,8 +87,9 @@ void run_training_iteration(std::vector<game::Board *> &boards_to_train_on, cons
 
   // Train network
   for (int i = 0; i < network::Optimizer::DEFAULT_TRAINING_REPETITIONS; ++i)
-    for (auto &board: boards_to_train_on)
-      network::Optimizer::optimize(network::NetworkStorage::current_network(), board, result.evaluate() * 100.0,
+    for (auto &pair: boards_to_train_on)
+      network::Optimizer::optimize(network::NetworkStorage::current_network(), pair.first,
+                                   10.0 * (5.0 * pair.second + result.evaluate()) / 6.0, // 5:1 weight + scale to 10x
                                    lambda, lambda_max, lambda_change);
 
   // Save network "if necessary"
@@ -94,8 +97,8 @@ void run_training_iteration(std::vector<game::Board *> &boards_to_train_on, cons
     network::NetworkStorage::saveNetwork();
 
   // clear all previous training cases
-  for (auto &board : boards_to_train_on)
-    delete board;
+  for (auto &pair : boards_to_train_on)
+    delete pair.first;
   boards_to_train_on.clear();
 }
 
@@ -103,16 +106,19 @@ int train_network() {
   NETWORK_SAVE_INTERVAL = 20;
   network::NetworkStorage::SAVE_NETWORKS = true;
 
-  std::vector<game::Board *> boards_to_train_on;
-  network::NetworkStorage::setTestCaseSelector([&](game::Board *b) -> void {
+  std::vector<std::pair<game::Board *, double>> boards_to_train_on;
+  network::NetworkStorage::setTestCaseSelector([&](game::Board *b, double d) -> void {
     // arbitrary 1/5 chance of any game state being a training case
-    if (math::chance(1.0 / 5.0))
-      boards_to_train_on.push_back(b->clone());
+    if (math::chance(1.0 / 5.0)) {
+      double result = 2.0 * d - 1.0;                        // transform result from [0.0, 1.0] to [-1.0, 1.0]
+      math::clamp(result, {-1.0, 1.0});     // clamp result to [-1.0, 1.0]
+      boards_to_train_on.emplace_back(b->clone(), result);  // store board AND result
+    }
   });
 
   network::NetworkStorage::initialize();
 
-  const int NUM_TRAINING_ITERATIONS = 1000;
+  const int NUM_TRAINING_ITERATIONS = 1;
   for (int i = 0; i < NUM_TRAINING_ITERATIONS; ++i) {
     run_training_iteration(boards_to_train_on, i);
 
@@ -137,5 +143,5 @@ int test() {
 }
 
 int main() {
-  return test();
+  return train_network();
 }

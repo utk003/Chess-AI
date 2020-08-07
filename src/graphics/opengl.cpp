@@ -23,6 +23,7 @@ graphics::OpenGL *graphics::OpenGL::get_instance(game::Game *game, const std::st
 
   if (instance->_window == nullptr) {
     debug_assert();
+    delete instance;
     return nullptr;
   }
   _opengl_map[instance->_window] = instance;
@@ -31,6 +32,10 @@ graphics::OpenGL *graphics::OpenGL::get_instance(game::Game *game, const std::st
 }
 
 graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
+  if (game == nullptr) {
+    debug_assert();
+    return;
+  }
   _game = game;
   _board = game->board();
 
@@ -109,22 +114,21 @@ GLuint graphics::OpenGL::getTextureBuffer() {
 void graphics::OpenGL::loadTexture(const std::string &fileName, std::map<std::string, GLuint> &text_map) {
   int w, h, channels;
   stbi_uc *buf = stbi_load(fileName.c_str(), &w, &h, &channels, 4);
-  if (buf == nullptr) {
+
+  if (buf != nullptr) {
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    text_map[fileName] = textureID;
+  } else
     debug_assert();
-    return;
-  }
-
-  GLuint textureID;
-  glGenTextures(1, &textureID);
-  glBindTexture(GL_TEXTURE_2D, textureID);
-
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-  glGenerateMipmap(GL_TEXTURE_2D);
 
   stbi_image_free(buf);
-
-  text_map[fileName] = textureID;
 }
 
 void graphics::OpenGL::loadTextures() {
@@ -191,7 +195,8 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode
         break;
 
       case GLFW_KEY_TAB:
-        _show_expanded_ui = !_show_expanded_ui;
+        // TODO Work on multi-threaded interactions <--> expanded ui features
+        // _show_expanded_ui = !_show_expanded_ui;
         break;
 
       case GLFW_KEY_S:
@@ -205,10 +210,26 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode
 }
 
 void graphics::OpenGL::initialize() {
+  // Exit if game doesn't exist
+  if (_game == nullptr) {
+    debug_assert();
+    return;
+  }
+
   // Initialize GLFW
   if (!glfwInit()) {
     fprintf(stderr, "Failed to initialize GLFW\n");
-    fatal_assert();
+    debug_assert();
+    return;
+  }
+
+  // Initialize GLEW
+  glewExperimental = true; // Needed for core profile
+  if (glewInit() != GLEW_OK) {
+    fprintf(stderr, "Failed to initialize GLEW\n");
+    glfwTerminate();
+    debug_assert();
+    return;
   }
 
   glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
@@ -223,17 +244,10 @@ void graphics::OpenGL::initialize() {
     fprintf(stderr,
             "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
     glfwTerminate();
-    fatal_assert();
+    debug_assert();
+    return;
   }
   glfwMakeContextCurrent(_window);
-
-  // Initialize GLEW
-  glewExperimental = true; // Needed for core profile
-  if (glewInit() != GLEW_OK) {
-    fprintf(stderr, "Failed to initialize GLEW\n");
-    glfwTerminate();
-    fatal_assert();
-  }
 
   // Ensure we can capture the escape key being pressed below
   glfwSetInputMode(_window, GLFW_STICKY_KEYS, GL_TRUE);
