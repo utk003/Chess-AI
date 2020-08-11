@@ -1,7 +1,7 @@
 #ifndef CHESS_AI_UTIL_ASSERT_UTIL_H_
 #define CHESS_AI_UTIL_ASSERT_UTIL_H_
 
-#if (defined(DEBUG) && DEBUG == 1)
+#if (defined(DEBUG))
   #ifdef NDEBUG
     #undef NDEBUG
   #endif

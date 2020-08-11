@@ -139,6 +139,8 @@ int test() {
   std::cout << "gcc" << std::endl;
 #endif
 
+  std::cout << "hi" << std::endl;
+
   return 0;
 }
 

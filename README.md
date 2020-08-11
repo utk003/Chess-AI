@@ -11,4 +11,4 @@ See logs.txt for a push-to-push change/update log, my thoughts on the project, a
 
 
 NOTE:
-This code compiles correctly with both [Clang](https://clang.llvm.org/) and [GCC](https://gcc.gnu.org/) (as far as I can tell/tested). In order to get/compile/run the program for yourself, you need a few external libraries/header files: [GLFW](https://www.glfw.org/), [GLEW](http://glew.sourceforge.net/), [GSL](https://www.gnu.org/software/gsl/), [stb](https://github.com/nothings/stb)
+This code compiles correctly with both [Clang](https://clang.llvm.org/) and [GCC](https://gcc.gnu.org/) (as far as I can tell/tested). In order to get/compile/run the program for yourself, you need a few external libraries/header files: [GLFW](https://www.glfw.org/), [GLEW](http://glew.sourceforge.net/), [GSL](https://www.gnu.org/software/gsl/), [GLM](https://glm.g-truc.net/0.9.9/index.html), [stb](https://github.com/nothings/stb)
