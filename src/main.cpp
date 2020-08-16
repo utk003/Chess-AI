@@ -138,5 +138,5 @@ int test() {
 }
 
 int main() {
-  return train_network();
+  return run_game();
 }

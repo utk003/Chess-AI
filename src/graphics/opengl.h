@@ -37,7 +37,7 @@ class OpenGL {
 
     void initialize();
 
-    static GLuint getCoordBuffer(int r, int c);
+    static GLuint getCoordBuffer(int rInt, int cInt);
     static GLuint getTextureBuffer();
 
     static void loadTexture(const std::string &fileName, std::map<std::string, GLuint> &text_map);

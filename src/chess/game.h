@@ -9,6 +9,7 @@
 #include <map>
 #include <utility> // std::pair
 #include <stack>
+#include <atomic>
 
 #include "piece.h"
 #include "../player/player.h"
@@ -74,9 +75,13 @@ class Board : piece::PieceManager {
 
     [[nodiscard]] Board *clone() const;
 
+    bool saveToFile(const std::string &fileName);
     bool loadFromFile(const std::string &fileName);
 
+    [[nodiscard]] int move_count() const { return _move_count.operator int(); }
+
   private:
+    std::atomic_int _move_count;
     int _length;
     int _width;
     std::vector<piece::Piece *> _pieces;

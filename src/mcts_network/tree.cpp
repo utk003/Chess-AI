@@ -210,6 +210,7 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       node = optimal.second;
       bool success = clone->tryMove(optimal.first);
       if (!success) {
+        clone->board()->saveToFile("mcts crash board layout");
         std::cout << optimal.first.toString() << std::endl;
         debug_assert();
 

@@ -5,7 +5,6 @@
 #include <stb_image.h>
 
 #include <string>
-#include <fstream>
 
 #include "../chess/game.h"
 
@@ -72,17 +71,17 @@ graphics::OpenGL::~OpenGL() {
   glfwTerminate();
 }
 
-GLuint graphics::OpenGL::getCoordBuffer(int r, int c) {
-  r -= 4;
-  c -= 4;
+GLuint graphics::OpenGL::getCoordBuffer(int rInt, int cInt) {
+  float r = (float) rInt - 4.0f;
+  float c = (float) cInt - 4.0f;
 
   GLfloat g_vertex_buffer_data[] = {
-    2.0f * c, 2.0f * r, 0.0f,
-    2.0f * c, 2.0f * (r + 1), 0.0f,
-    2.0f * (c + 1), 2.0f * (r + 1), 0.0f,
-    2.0f * c, 2.0f * r, 0.0f,
-    2.0f * (c + 1), 2.0f * (r + 1), 0.0f,
-    2.0f * (c + 1), 2.0f * r, 0.0f,
+    2.0f * c,           2.0f * r,           0.0f,
+    2.0f * c,           2.0f * (r + 1.0f),  0.0f,
+    2.0f * (c + 1.0f),  2.0f * (r + 1.0f),  0.0f,
+    2.0f * c,           2.0f * r,           0.0f,
+    2.0f * (c + 1.0f),  2.0f * (r + 1.0f),  0.0f,
+    2.0f * (c + 1.0f),  2.0f * r,           0.0f,
   };
 
   GLuint vertexbuffer;
@@ -194,16 +193,16 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode
         _board->undoMove(_game);
         break;
 
+      case GLFW_KEY_S:
+        _board->saveToFile("save " + std::to_string(_file_save_counter++));
+        break;
+
       case GLFW_KEY_TAB:
         // TODO Work on multi-threaded interactions <--> expanded ui features
         // _show_expanded_ui = !_show_expanded_ui;
         break;
 
-      case GLFW_KEY_S:
-        std::ofstream myfile;
-        myfile.open("../game_state/save " + std::to_string(_file_save_counter++) + ".txt");
-        myfile << _board;
-        myfile.close();
+      default:
         break;
     }
   }
@@ -219,15 +218,6 @@ void graphics::OpenGL::initialize() {
   // Initialize GLFW
   if (!glfwInit()) {
     fprintf(stderr, "Failed to initialize GLFW\n");
-    debug_assert();
-    return;
-  }
-
-  // Initialize GLEW
-  glewExperimental = true; // Needed for core profile
-  if (glewInit() != GLEW_OK) {
-    fprintf(stderr, "Failed to initialize GLEW\n");
-    glfwTerminate();
     debug_assert();
     return;
   }
@@ -248,6 +238,15 @@ void graphics::OpenGL::initialize() {
     return;
   }
   glfwMakeContextCurrent(_window);
+
+  // Initialize GLEW
+  glewExperimental = true; // Needed for core profile
+  if (glewInit() != GLEW_OK) {
+    fprintf(stderr, "Failed to initialize GLEW\n");
+    glfwTerminate();
+    debug_assert();
+    return;
+  }
 
   // Ensure we can capture the escape key being pressed below
   glfwSetInputMode(_window, GLFW_STICKY_KEYS, GL_TRUE);

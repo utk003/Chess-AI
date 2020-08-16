@@ -245,11 +245,12 @@ bool game::Board::doMove(Move *move, Game *game) {
     return false;
   }
   _move_stack.push(move);
+  _move_count++;
 
   bool isCaptureMove = move->doMove(this);
 
   if (game != nullptr)
-    game->_current_player_color = !game->_current_player_color;
+    game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
 
   return isCaptureMove;
 }
@@ -259,6 +260,7 @@ void game::Board::undoMove(Game *game) {
     debug_assert();
     return;
   }
+  _move_count++;
 
   Move *move = _move_stack.top();
   move->undoMove(this);
@@ -266,7 +268,7 @@ void game::Board::undoMove(Game *game) {
   delete move;
 
   if (game != nullptr)
-    game->_current_player_color = !game->_current_player_color;
+    game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
 }
 
 game::Move *game::Board::getLastMove() const {
@@ -288,7 +290,7 @@ game::Board *game::Board::clone() const {
 namespace game {
 
 std::istream &operator>>(std::istream &input, Board *&b) {
-  // Bookkeeping -> clear old board completely
+  // memory management -> clear old board completely
   while (!b->_move_stack.empty()) {
     delete b->_move_stack.top();
     b->_move_stack.pop();
@@ -326,6 +328,20 @@ std::ostream &operator<<(std::ostream &output, Board *&b) {
   return output;
 }
 
+}
+
+bool game::Board::saveToFile(const std::string &fileName) {
+  std::ofstream myfile;
+  myfile.open("../game_state/" + fileName + ".txt");
+  if (!myfile.is_open()) {
+    debug_assert();
+    return false;
+  }
+
+  myfile << this;
+  myfile.close();
+
+  return true;
 }
 
 bool game::Board::loadFromFile(const std::string &fileName) {

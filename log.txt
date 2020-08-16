@@ -85,3 +85,9 @@ Update to CMakeLists.txt to work better out of the box
 August 15, 2020
 ---------------
 Debugging update
+
+
+
+August 16, 2020
+---------------
+Debugging update
