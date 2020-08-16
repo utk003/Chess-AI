@@ -78,4 +78,10 @@ Now this should be able to train
 August 10, 2020
 ---------------
 Update to CMakeLists.txt to work better out of the box
-  - Now all dependencies can be installed (ie with homebrew) and then CMake will auutomatically find the files to link with using pkg-config
+  - Now all dependencies can be installed (ie with homebrew) and then CMake will automatically find the files to link with using pkg-config
+
+
+
+August 15, 2020
+---------------
+Debugging update

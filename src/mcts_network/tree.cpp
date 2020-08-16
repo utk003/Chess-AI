@@ -95,10 +95,10 @@ std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::fun
   }
 
   if (optimal.second == nullptr) {
-    std::cout << _children.size() << std::endl;
-    std::cout << optimal.first.toString() << std::endl;
-    std::cout << max_score << " " << score << std::endl;
-    fatal_assert();
+//    std::cout << _children.size() << std::endl;
+//    std::cout << optimal.first.toString() << std::endl;
+//    std::cout << max_score << " " << score << std::endl;
+    debug_assert();
   }
   return optimal;
 }
@@ -210,6 +210,7 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       node = optimal.second;
       bool success = clone->tryMove(optimal.first);
       if (!success) {
+        std::cout << optimal.first.toString() << std::endl;
         debug_assert();
 
         delete clone;

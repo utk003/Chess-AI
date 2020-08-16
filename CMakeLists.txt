@@ -53,8 +53,12 @@ add_executable(Chess_AI ${SOURCE_FILES})
 
 # link headers for dependencies
 target_link_libraries(Chess_AI ${GLFW_LIBRARIES} ${GLEW_LIBRARIES} ${GSL_LIBRARIES})
+
+# system-specific settings
 if (APPLE)
     target_link_libraries(Chess_AI "-framework Cocoa -framework OpenGL -framework IOKit") # needed for static glfw library binary on OSX
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread") # needed for multithreading???
 endif ()
 
 # Debug/Release Macros

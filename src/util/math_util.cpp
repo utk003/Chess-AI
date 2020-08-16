@@ -3,13 +3,26 @@
 #include <random>
 #include <chrono>
 #include <ctime>
+#include <iostream>
 
 #include "assert_util.h"
 
+bool done = false;
+void print(const std::string &s) {
+  if (done)
+    return;
+
+  done = true;
+  std::cout << "Random Number Generator Seed -> " << s;
+}
+
 double run_randomizer() {
-  static std::chrono::system_clock::time_point time_on_start = std::chrono::system_clock::now();
+  static auto time_on_start = std::chrono::system_clock::now();
   static time_t time = std::chrono::system_clock::to_time_t(time_on_start);
   static std::string string_time(ctime(&time));
+
+  print(string_time);
+
   static std::seed_seq seed(string_time.begin(), string_time.end());
   static std::mt19937 randomizer_32bit{seed};
   static std::uniform_real_distribution<double> distribution{0.0, 1.0};
@@ -38,7 +51,7 @@ int math::random(int min, int max) {
   return (int) random((double) min, (double) max + 1.0);
 }
 // [0, size-1]
-int math::random(int size) { return random(0, size-1); }
+int math::random(int size) { return random(0, size - 1); }
 
 // clamp x to [range.first, range.second]
 void math::clamp(double &x, std::pair<double, double> range) {

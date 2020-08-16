@@ -9,6 +9,7 @@
 #include "graphics/opengl.h"
 #include "mcts_network/network.h"
 #include "util/thread_util.h"
+#include "util/math_util.h"
 
 int run_game() {
   network::NetworkStorage::initialize();
@@ -62,23 +63,17 @@ game::GameResult create_game_training_case() {
   return result;
 }
 
+double get_overall_result(double scale, double mcts_result, double game_result) {
+  static double mcts_weight = 5.0;
+  static double game_result_weight = 1.0;
+  static double weights_sum = mcts_weight + game_result_weight; // 6.0
+
+  return scale * (mcts_weight * mcts_result + game_result_weight * game_result) / weights_sum; // 5:1 weight
+}
+
 void
 run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_train_on, const int TRAINING_INDEX) {
-//  // Start time
-//  std::chrono::system_clock::time_point time_on_start = std::chrono::system_clock::now();
-//  time_t time1 = std::chrono::system_clock::to_time_t(time_on_start);
-//
-//  // Run game
-//  std::cout << "starting game " << TRAINING_INDEX;
   game::GameResult result = create_game_training_case();
-//  std::cout << " - " << "ending game " << TRAINING_INDEX << std::endl;
-//
-//  // End time
-//  std::chrono::system_clock::time_point time_on_end = std::chrono::system_clock::now();
-//  time_t time2 = std::chrono::system_clock::to_time_t(time_on_end);
-//
-//  // Print start and end times
-//  std::cout << "Start: " << ctime(&time1) << "End: " << ctime(&time2);
 
   // Set up network training parameters
   double lambda = network::Optimizer::DEFAULT_INITIAL_LAMBDA;
@@ -89,7 +84,7 @@ run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_
   for (int i = 0; i < network::Optimizer::DEFAULT_TRAINING_REPETITIONS; ++i)
     for (auto &pair: boards_to_train_on)
       network::Optimizer::optimize(network::NetworkStorage::current_network(), pair.first,
-                                   10.0 * (5.0 * pair.second + result.evaluate()) / 6.0, // 5:1 weight + scale to 10x
+                                   get_overall_result(20.0, pair.second, result.evaluate()),
                                    lambda, lambda_max, lambda_change);
 
   // Save network "if necessary"
@@ -102,6 +97,7 @@ run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_
   boards_to_train_on.clear();
 }
 
+bool load_prev_network = false;
 int train_network() {
   NETWORK_SAVE_INTERVAL = 20;
   network::NetworkStorage::SAVE_NETWORKS = true;
@@ -110,13 +106,17 @@ int train_network() {
   network::NetworkStorage::setTestCaseSelector([&](game::Board *b, double d) -> void {
     // arbitrary 1/5 chance of any game state being a training case
     if (math::chance(1.0 / 5.0)) {
-      double result = 2.0 * d - 1.0;                        // transform result from [0.0, 1.0] to [-1.0, 1.0]
-      math::clamp(result, {-1.0, 1.0});     // clamp result to [-1.0, 1.0]
-      boards_to_train_on.emplace_back(b->clone(), result);  // store board AND result
+      double bounded_mcts_result = 2.0 * d - 1.0;                     // transform result from [0.0, 1.0] to [-1.0, 1.0]
+      math::clamp(bounded_mcts_result, {-1.0, 1.0});   // clamp result to [-1.0, 1.0]
+      boards_to_train_on.emplace_back(b->clone(), bounded_mcts_result); // store board AND result
     }
   });
 
-  network::NetworkStorage::initialize();
+//  load_prev_network = true;
+  if (load_prev_network)
+    network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK);
+  else
+    network::NetworkStorage::initialize();
 
   const int NUM_TRAINING_ITERATIONS = 1;
   for (int i = 0; i < NUM_TRAINING_ITERATIONS; ++i) {
@@ -133,14 +133,7 @@ int train_network() {
 }
 
 int test() {
-#if defined(__clang__)
-  std::cout << "clang" << std::endl;
-#elif defined(__GNUC__)
-  std::cout << "gcc" << std::endl;
-#endif
-
-  std::cout << "hi" << std::endl;
-
+  math::random();
   return 0;
 }
 

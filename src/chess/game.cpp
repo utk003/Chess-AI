@@ -1,7 +1,6 @@
 #include "game.h"
 
 #include <string>
-#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <fstream>
