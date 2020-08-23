@@ -38,17 +38,21 @@ player::Player::Player(game::Game *g, piece::PieceColor c, PlayerType t) {
   _board = g->board();
   _color = c;
   _type = t;
+
+  _move_count_at_start = -1;
 }
 // DO NOT DELETE BOARD OR GAME
 // nothing else to delete
 player::Player::~Player() = default;
 
 void player::Player::playMove(const game::Move &m) {
-  _game->board()->set_pawn_upgrade_type(piece::PieceType::QUEEN); // Default in case move "forgot" it???
-  bool move_success = _game->tryMove(m);
-  if (!move_success) { // Move must succeed
-    debug_assert();
-    playNextMove();
+  if (!moveOverByUndo()) {
+    _game->board()->set_pawn_upgrade_type(piece::PieceType::QUEEN); // Default in case move "forgot" it???
+    bool move_success = _game->tryMove(m);
+    if (!move_success) { // Move must succeed
+      debug_assert();
+      findAndPlayMove();
+    }
   }
 }
 
@@ -59,6 +63,22 @@ void player::Player::playRandomMove() {
   playMove(moves[math::random((int) moves.size())]);
 }
 
+void player::Player::playNextMove() {
+  if (_move_count_at_start >= 0)
+    debug_assert();
+
+  _move_count_at_start = _game->board()->move_count();
+  this->findAndPlayMove();
+  _move_count_at_start = -1;
+}
+
+bool player::Player::moveOverByUndo() const {
+  return _move_count_at_start != _game->board()->move_count();
+}
+bool player::Player::moveOver() const {
+  return _game->isMoveOver() || moveOverByUndo();
+}
+
 // HumanPlayer class
 player::HumanPlayer::HumanPlayer(game::Game *g, piece::PieceColor c) : Player(g, c, PlayerType::HUMAN) {
   _r = -1;
@@ -66,7 +86,7 @@ player::HumanPlayer::HumanPlayer(game::Game *g, piece::PieceColor c) : Player(g,
 }
 player::HumanPlayer::~HumanPlayer() = default;
 
-void player::HumanPlayer::playNextMove() {
+void player::HumanPlayer::findAndPlayMove() {
   thread::do_while_waiting_for(
     [&] {
       if (_r != -1) {
@@ -74,7 +94,7 @@ void player::HumanPlayer::playNextMove() {
         _r = -1;
         _c = -1;
       }
-    }, [&] { return _game->isMoveOver(); }
+    }, [&] { return moveOver(); }
   );
 }
 
@@ -93,7 +113,7 @@ void player::HumanPlayer::setPawnUpgradeType(piece::PieceType type) {
 player::RandomPlayer::RandomPlayer(game::Game *g, piece::PieceColor c) : Player(g, c, PlayerType::RANDOM) {}
 player::RandomPlayer::~RandomPlayer() = default;
 
-void player::RandomPlayer::playNextMove() {
+void player::RandomPlayer::findAndPlayMove() {
   playRandomMove();
 }
 
@@ -138,12 +158,12 @@ std::vector<game::Move> player::MinimaxPlayer::allMoves(piece::PieceColor c) {
 }
 
 void player::MinimaxPlayer::timeKeeper(MinimaxPlayer *player, int moveCount, int time_in_seconds) {
-  thread::sleep(time_in_seconds);
+  thread::wait_for_timeout([&] { return player->moveOver(); }, time_in_seconds);
   if (moveCount == player->_move_counter)
     player->_is_time_up = true;
 }
 
-void player::MinimaxPlayer::playNextMove() {
+void player::MinimaxPlayer::findAndPlayMove() {
   if (_search_depth <= 0) {
     playRandomMove();
     return;
@@ -272,7 +292,7 @@ int player::AlphaBetaPlayer::currentBoardScore() {
   return score;
 }
 
-void player::AlphaBetaPlayer::playNextMove() {
+void player::AlphaBetaPlayer::findAndPlayMove() {
   if (_search_depth <= 0) {
     playRandomMove();
     return;
@@ -399,18 +419,22 @@ int player::AlphaBetaPlayer::alphaBetaSearch(int depth, int alpha, int beta, boo
 // MonteCarloPlayer Class
 player::MonteCarloPlayer::MonteCarloPlayer(game::Game *g, piece::PieceColor c) : Player(g, c,
                                                                                         player::PlayerType::MCTS) {
-  _move_ranker = new decider::Randomizer();
+  _move_ranker = new decider::Minimaxer();
 }
 player::MonteCarloPlayer::MonteCarloPlayer(game::Game *g, piece::PieceColor c, player::PlayerType t) : Player(g, c,
-                                                                                                              t) {}
+                                                                                                              t) {
+  _move_ranker = nullptr;
+}
 player::MonteCarloPlayer::~MonteCarloPlayer() {
   delete _move_ranker;
 }
 
-void player::MonteCarloPlayer::playNextMove() {
-  std::pair<game::Move, tree::Node *> move_node_pair = tree::MCTS::run_mcts(_game, _move_ranker);
-  playMove(move_node_pair.first);
+void player::MonteCarloPlayer::findAndPlayMove() {
+  tree::MCTS::game_move_count = _move_count_at_start;
+  std::pair<game::Move, tree::Node *> move_node_pair = tree::MCTS::run_mcts_multithreaded(_game, _move_ranker);
+  tree::MCTS::game_move_count = -1;
 
+  playMove(move_node_pair.first);
   delete move_node_pair.second; // free memory to prevent memory leaks
 }
 
@@ -423,10 +447,12 @@ player::NetworkAIPlayer::~NetworkAIPlayer() {
   _move_ranker = nullptr;
 }
 
-void player::NetworkAIPlayer::playNextMove() {
+void player::NetworkAIPlayer::findAndPlayMove() {
+  tree::MCTS::game_move_count = _move_count_at_start;
   std::pair<game::Move, tree::Node *> move_node_pair = tree::MCTS::run_mcts_multithreaded(_game, _move_ranker);
-  playMove(move_node_pair.first);
+  tree::MCTS::game_move_count = -1;
 
+  playMove(move_node_pair.first);
   network::NetworkStorage::saveBoard(_game->board(), move_node_pair.second);
 
   delete move_node_pair.second; // free memory to prevent memory leaks

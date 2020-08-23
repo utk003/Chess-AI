@@ -14,6 +14,15 @@ void thread::wait_for(const std::function<bool()> &exit_condition) {
   do_while_waiting_for([] {}, exit_condition);
 }
 
+void thread::wait_for_timeout(const bool &exit_condition, int timeout_seconds) {
+  wait_for_timeout([&] { return exit_condition; }, timeout_seconds);
+}
+
+void thread::wait_for_timeout(const std::function<bool()> &exit_condition, int timeout_seconds) {
+  int counter = timeout_seconds * 1000;
+  do_while_waiting_for([] {}, [&] { return exit_condition() || counter-- < 0; });
+}
+
 void thread::do_while_waiting_for(const std::function<void()> &to_do, const bool &exit_condition) {
   do_while_waiting_for(to_do, [&] { return exit_condition; });
 }

@@ -144,8 +144,8 @@ class NetworkStorage : NetworkManager {
 
     static bool SAVE_NETWORKS;
 
-    inline const static std::string NETWORK_STORAGE_FILE_PATH = "../network_dump/";
-    inline const static std::string LATEST_NETWORK = NETWORK_STORAGE_FILE_PATH + "latest.txt";
+    inline const static std::string NETWORK_DUMP_DIRECTORY = "network_dump/";
+    inline const static std::string LATEST_NETWORK_FILE_PATH = NETWORK_DUMP_DIRECTORY + "latest.txt";
 
   private:
     static void saveLatestNetwork();

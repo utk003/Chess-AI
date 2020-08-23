@@ -32,7 +32,7 @@ set(SRC_PLAYER_DIR ${SRC_PLAYER_PLAYER})
 set(SRC_UTIL_MATH_UTIL src/util/math_util.h src/util/math_util.cpp)
 set(SRC_UTIL_STRING_UTIL src/util/string_util.h src/util/string_util.cpp)
 set(SRC_UTIL_THREAD_UTIL src/util/string_util.h src/util/thread_util.cpp)
-set(SRC_UTIL_ASSERT_UTIL src/util/assert_util.h)
+set(SRC_UTIL_ASSERT_UTIL src/util/assert_util.h src/util/assert_util.cpp)
 
 set(SRC_UTIL_DIR ${SRC_UTIL_MATH_UTIL} ${SRC_UTIL_STRING_UTIL} ${SRC_UTIL_THREAD_UTIL} ${SRC_UTIL_ASSERT_UTIL})
 
@@ -57,9 +57,10 @@ target_link_libraries(Chess_AI ${GLFW_LIBRARIES} ${GLEW_LIBRARIES} ${GSL_LIBRARI
 # system-specific settings
 if (APPLE)
     target_link_libraries(Chess_AI "-framework Cocoa -framework OpenGL -framework IOKit") # needed for static glfw library binary on OSX
-else ()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread") # needed for multithreading???
 endif ()
+
+# required linker flags in makefile
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -rdynamic") # needed for multithreading/stack tracing
 
 # Debug/Release Macros
 if (CMAKE_BUILD_TYPE MATCHES Debug)

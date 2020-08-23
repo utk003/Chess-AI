@@ -91,3 +91,12 @@ Debugging update
 August 16, 2020
 ---------------
 Debugging update
+
+
+
+August 23, 2020
+---------------
+Upgrade to training -> More aggressive training reps, more aggressive mcts, stored training cases, sharper targets, etc.
+Updated debugging tools -> Stack trace
+Better usability -> Tries to automatically detect correct working directory + can be given absolute path as argument
+General code cleanup

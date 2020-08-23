@@ -182,15 +182,13 @@ network::Network *network::Network::clone(Network *network) {
 }
 
 network::Network *network::Network::loadFromFile(const std::string &file_path) {
-  std::ifstream in_stream(file_path);
-  if (!in_stream.is_open()) {
-    debug_assert();
-    return nullptr;
-  }
-
   Network *network = nullptr;
-  in_stream >> network;
-  in_stream.close();
+
+  std::ifstream in_stream(file_path);
+  if (in_stream.is_open()) {
+    in_stream >> network;
+    in_stream.close();
+  } else debug_assert();
 
   return network;
 }
@@ -261,8 +259,7 @@ bool network::NetworkStorage::SAVE_NETWORKS = false;
 std::function<void(game::Board *, double)> network::NetworkStorage::_network_training_case;
 
 network::Network *network::NetworkStorage::current_network() {
-  if (_current_network == nullptr)
-    debug_assert();
+  if (_current_network == nullptr) debug_assert();
   return _current_network;
 }
 
@@ -309,8 +306,8 @@ network::Network *network::NetworkStorage::initialize(const std::string &file_pa
 void network::NetworkStorage::saveNetwork() {
   if (SAVE_NETWORKS && _current_network != nullptr) {
     if (_network_count >= 0) {
-      std::string past_network = NETWORK_STORAGE_FILE_PATH + "gen-" + std::to_string(_network_count++) + ".txt";
-      rename(LATEST_NETWORK.c_str(), past_network.c_str());
+      std::string past_network = NETWORK_DUMP_DIRECTORY + "gen-" + std::to_string(_network_count++) + ".txt";
+      rename(LATEST_NETWORK_FILE_PATH.c_str(), past_network.c_str());
     } else
       _network_count++;
 
@@ -322,7 +319,7 @@ void network::NetworkStorage::saveLatestNetwork() {
   if (SAVE_NETWORKS) {
     // TODO finalize network dump system
     std::ofstream new_net_file;
-    new_net_file.open(LATEST_NETWORK);
+    new_net_file.open(LATEST_NETWORK_FILE_PATH);
     new_net_file << _current_network;
     new_net_file.close();
   }
@@ -371,18 +368,20 @@ std::istream &operator>>(std::istream &input, Network *&net) {
 }
 
 std::ostream &operator<<(std::ostream &output, Network *&net) {
-  output << net->_num_layers << std::endl;
+  if (net != nullptr) {
+    output << net->_num_layers << std::endl;
 
-  int n;
-  for (n = 0; n < net->_num_layers - 1; ++n)
-    output << net->_dimensions[n] << " ";
-  output << net->_dimensions[net->_num_layers - 1] << std::endl;
+    int n;
+    for (n = 0; n < net->_num_layers - 1; ++n)
+      output << net->_dimensions[n] << " ";
+    output << net->_dimensions[net->_num_layers - 1] << std::endl;
 
-  int i, j;
-  for (n = 0; n < net->_num_layers - 1; ++n)
-    for (i = 0; i < net->_dimensions[n]; ++i)
-      for (j = 0; j < net->_dimensions[n + 1]; ++j)
-        output << net->_connections[n][i][j] << " ";
+    int i, j;
+    for (n = 0; n < net->_num_layers - 1; ++n)
+      for (i = 0; i < net->_dimensions[n]; ++i)
+        for (j = 0; j < net->_dimensions[n + 1]; ++j)
+          output << net->_connections[n][i][j] << " ";
+  } else debug_assert();
 
   return output;
 }

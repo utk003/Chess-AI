@@ -3,7 +3,6 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <fstream>
 #include <vector>
 #include <utility>
 
@@ -205,7 +204,7 @@ void game::Board::getMovesFromSquare(int r, int c, std::vector<game::Move> *move
   if (moves == nullptr)
     return;
 
-  if (isValidPosition(r,c)) {
+  if (isValidPosition(r, c)) {
     int r2, c2;
     for (r2 = 0; r2 < 8; ++r2)
       for (c2 = 0; c2 < 8; ++c2) {
@@ -217,8 +216,7 @@ void game::Board::getMovesFromSquare(int r, int c, std::vector<game::Move> *move
           if (move.verify(this))
             moves->push_back(move);
       }
-  } else
-    debug_assert();
+  } else debug_assert();
 }
 
 void game::Board::getPossibleMoves(std::vector<game::Move> *white, std::vector<game::Move> *black) {
@@ -267,8 +265,11 @@ void game::Board::undoMove(Game *game) {
   _move_stack.pop();
   delete move;
 
-  if (game != nullptr)
+  if (game != nullptr) {
     game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
+    game->resetSelection();
+    game->updateGameState();
+  }
 }
 
 game::Move *game::Board::getLastMove() const {
@@ -283,8 +284,16 @@ game::Board *game::Board::clone() const {
     newBoard->_pieces[i] = _pieces[i]->clone();
 
   newBoard->_pawn_upgrade_type = piece::PieceType::NONE;
+  newBoard->_move_count.store(_move_count.operator int());
 
   return newBoard;
+}
+
+double game::Board::score(const std::function<double(piece::Piece *)> &piece_scorer) const {
+  double score = 0;
+  for (const auto &piece: _pieces)
+    score += piece_scorer(piece);
+  return score;
 }
 
 namespace game {
@@ -311,8 +320,7 @@ std::istream &operator>>(std::istream &input, Board *&b) {
     input >> ind >> spacer;
     if (ind == i)
       input >> b->_pieces[i];
-    else
-      debug_assert(); // -> Malformed input file!!
+    else debug_assert(); // -> Malformed input file!!
     getline(input, spacer); // skip to end of line
   }
 
@@ -330,32 +338,23 @@ std::ostream &operator<<(std::ostream &output, Board *&b) {
 
 }
 
-bool game::Board::saveToFile(const std::string &fileName) {
-  std::ofstream myfile;
-  myfile.open("../game_state/" + fileName + ".txt");
-  if (!myfile.is_open()) {
-    debug_assert();
-    return false;
-  }
+std::ofstream game::Board::saveToFile(const std::string &fileName) {
+  std::ofstream out_stream("game_state/" + fileName + ".txt");
+  if (out_stream.is_open())
+    out_stream << this;
+  else debug_assert();
 
-  myfile << this;
-  myfile.close();
-
-  return true;
+  return out_stream;
 }
 
-bool game::Board::loadFromFile(const std::string &fileName) {
+std::ifstream game::Board::loadFromFile(const std::string &fileName) {
   std::ifstream in_stream(fileName);
-  if (!in_stream.is_open()) {
-    debug_assert();
-    return false; // meh -> no open file -> who cares
-  }
+  if (in_stream.is_open()) {
+    Board *b = this;
+    in_stream >> b;
+  } else debug_assert();
 
-  Board *b = this;
-  in_stream >> b;
-  in_stream.close();
-
-  return true;
+  return in_stream;
 }
 
 // Move Class
@@ -371,8 +370,7 @@ std::vector<game::Move> game::Move::getMoves(int r1, int c1, int r2, int c2, gam
       moves.emplace_back(r1, c1, r2, c2, piece::PieceType::BISHOP);
     } else
       moves.emplace_back(r1, c1, r2, c2, piece::PieceType::NONE);
-  } else
-    debug_assert();
+  } else debug_assert();
 
   return moves;
 }
@@ -784,19 +782,16 @@ void game::Game::selectSquare(int x, int y) {
   _board->set_pawn_upgrade_type(piece::PieceType::NONE);
 
   if (_board->getPiece(x, y)->color() == _current_player_color) {
-    if (_selected_x == x && _selected_y == y) {
-      _selected_x = -1;
-      _selected_y = -1;
-    } else {
+    if (_selected_x == x && _selected_y == y)
+      resetSelection();
+    else {
       _selected_x = x;
       _selected_y = y;
     }
   } else if (_selected_x != -1 && _selected_y != -1) {
     bool moveSucceeded = tryMove(Move(_selected_x, _selected_y, x, y, _board->pawn_upgrade_type()));
-    if (moveSucceeded) {
-      _selected_x = -1;
-      _selected_y = -1;
-    }
+    if (moveSucceeded)
+      resetSelection();
   }
 }
 
@@ -817,23 +812,29 @@ bool game::Game::tryMove(const Move &move) {
   if (_moves_since_last_capture >= 50) { // 50 non-capture moves = Stalemate
     _over = true;
     _result = game::GameResult::STALEMATE;
-  } else {
-    // check for checkmate/stalemate
-    generatePossibleMoveVectors();
-    int movesSize = _current_player_color.isWhite() ? _white_moves.size(): _black_moves.size();
-    if (movesSize == 0) {
-      _over = true;
-
-      if (_board->isKingSafe(_current_player_color))
-        _result = game::GameResult::STALEMATE;
-      else
-        _result = _current_player_color.isWhite() ? game::GameResult::BLACK: game::GameResult::WHITE;
-    }
-  }
+  } else
+    updateGameState();
 
   // move complete
   _is_move_complete = true;
   return true;
+}
+
+void game::Game::updateGameState() {
+  // check for checkmate/stalemate
+  generatePossibleMoveVectors();
+  int movesSize = _current_player_color.isWhite() ? _white_moves.size(): _black_moves.size();
+  if (movesSize == 0) {
+    _over = true;
+
+    if (_board->isKingSafe(_current_player_color))
+      _result = game::GameResult::STALEMATE;
+    else
+      _result = _current_player_color.isWhite() ? game::GameResult::BLACK: game::GameResult::WHITE;
+  } else {
+    _over = false;
+    _result = game::GameResult::NONE;
+  }
 }
 
 void game::Game::generatePossibleMoveVectors() {

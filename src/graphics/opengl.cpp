@@ -38,7 +38,7 @@ graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
   _game = game;
   _board = game->board();
 
-  asset_file_path_header = ASSETS_2D_FILE_PATH_HEADER;
+  asset_file_path = ASSET_2D_DIRECTORY;
 
   _white = game->white_player();
   if (_white != nullptr) {
@@ -139,16 +139,16 @@ void graphics::OpenGL::loadTextures() {
   for (const std::string &backColor: backColors) {
     for (const std::string &name: pieceNames)
       for (const std::string &pieceColor: pieceColors) {
-        str = asset_file_path_header + "piece/" + backColor + "-" + pieceColor + "_" + name + ".png";
+        str = asset_file_path + "piece/" + backColor + "-" + pieceColor + "_" + name + ".png";
         loadTexture(str, _texture_map);
       }
-    str = asset_file_path_header + "piece/" + backColor + "-transparent.png";
+    str = asset_file_path + "piece/" + backColor + "-transparent.png";
     loadTexture(str, _texture_map);
   }
 
   std::string boardUI[4] = {"selected", "previous_move", "normal_move", "attacking_move"};
   for (const std::string &name: boardUI) {
-    str = asset_file_path_header + "overlay/" + name + ".png";
+    str = asset_file_path + "overlay/" + name + ".png";
     loadTexture(str, _texture_map);
   }
 }
@@ -262,7 +262,7 @@ void graphics::OpenGL::initialize() {
   loadTextures();
 
   // Create and compile our GLSL program from the shaders
-  _shader_programID = graphics::loadShaders("../shaders/vertex_shader.vs", "../shaders/fragment_shader.fs");
+  _shader_programID = graphics::loadShaders("shaders/vertex_shader.vs", "shaders/fragment_shader.fs");
 
   // Mouse button callback
   glfwSetMouseButtonCallback(_window, onMouseButtonClick);
@@ -327,14 +327,14 @@ void graphics::OpenGL::run() {
       for (c = 0; c < wid; ++c) {
         int backColorIndex = (r + c) % 2;
         piece::Piece *piece = _board->getPiece(r, c);
-        filePath = asset_file_path_header + "piece/" + std::to_string(backColorIndex) + "-" + piece->image_file_path();
+        filePath = asset_file_path + "piece/" + std::to_string(backColorIndex) + "-" + piece->image_file_path();
 
         renderSquare(r, c, textbuff, filePath);
       }
     // selected square overlay + attacked squares overlays
     int x = _game->selected_x(), y = _game->selected_y();
     if (x != -1 && y != -1) {
-      filePath = asset_file_path_header + "overlay/selected.png";
+      filePath = asset_file_path + "overlay/selected.png";
       renderSquare(x, y, textbuff, filePath);
 
       // attack squares if extra ui enabled
@@ -343,9 +343,9 @@ void graphics::OpenGL::run() {
         _game->board()->getMovesFromSquare(x, y, moves);
         for (const game::Move &move: *moves) {
           if (move.isAttack(_game->board()))
-            filePath = asset_file_path_header + "overlay/attacking_move.png";
+            filePath = asset_file_path + "overlay/attacking_move.png";
           else
-            filePath = asset_file_path_header + "overlay/normal_move.png";
+            filePath = asset_file_path + "overlay/normal_move.png";
 
           renderSquare(move.endingRow(), move.endingColumn(), textbuff, filePath);
         }
@@ -355,7 +355,7 @@ void graphics::OpenGL::run() {
     // previous move overlay
     game::Move *pastMove = _game->board()->getLastMove();
     if (pastMove != nullptr) {
-      filePath = asset_file_path_header + "overlay/previous_move.png";
+      filePath = asset_file_path + "overlay/previous_move.png";
       renderSquare(pastMove->startingRow(), pastMove->startingColumn(), textbuff, filePath);
       renderSquare(pastMove->endingRow(), pastMove->endingColumn(), textbuff, filePath);
     }

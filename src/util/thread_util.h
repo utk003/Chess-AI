@@ -16,6 +16,9 @@ void sleep(int seconds);
 void wait_for(const bool &exit_condition);
 void wait_for(const std::function<bool()> &exit_condition);
 
+void wait_for_timeout(const bool &exit_condition, int timeout_seconds);
+void wait_for_timeout(const std::function<bool()> &exit_condition, int timeout_seconds);
+
 void do_while_waiting_for(const std::function<void()> &to_do, const bool &exit_condition);
 void do_while_waiting_for(const std::function<void()> &to_do, const std::function<bool()> &exit_condition);
 

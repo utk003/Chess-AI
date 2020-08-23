@@ -5,6 +5,7 @@ namespace decider {
 
 class Decider;
 class Randomizer;
+class Minimaxer;
 
 }
 

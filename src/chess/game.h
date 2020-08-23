@@ -10,6 +10,8 @@
 #include <utility> // std::pair
 #include <stack>
 #include <atomic>
+#include <functional>
+#include <fstream>
 
 #include "piece.h"
 #include "../player/player.h"
@@ -75,13 +77,15 @@ class Board : piece::PieceManager {
 
     [[nodiscard]] Board *clone() const;
 
-    bool saveToFile(const std::string &fileName);
-    bool loadFromFile(const std::string &fileName);
+    std::ofstream saveToFile(const std::string &fileName);
+    std::ifstream loadFromFile(const std::string &fileName);
 
     [[nodiscard]] int move_count() const { return _move_count.operator int(); }
 
+    double score(const std::function<double(piece::Piece *)> &piece_scorer) const;
+
   private:
-    std::atomic_int _move_count;
+    std::atomic_int _move_count{0};
     int _length;
     int _width;
     std::vector<piece::Piece *> _pieces;
@@ -215,8 +219,13 @@ class Game : BoardController, piece::PieceManager {
     [[nodiscard]] std::vector<Move> possibleMoves() const;
     [[nodiscard]] std::vector<Move> possibleMoves(piece::PieceColor color) const;
 
+    inline void resetSelection() {
+      _selected_x = -1;
+      _selected_y = -1;
+    }
     void selectSquare(int x, int y);
     bool tryMove(const Move &move);
+    void updateGameState();
 
   private:
     Board *_board;

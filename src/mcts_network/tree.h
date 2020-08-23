@@ -13,7 +13,7 @@
 #include <thread>
 #include <atomic>
 
-#include "../chess/piece.fwd.h"
+#include "../chess/piece.h"
 #include "../chess/game.fwd.h"
 #include "decider.fwd.h"
 
@@ -75,10 +75,12 @@ class MCTS {
                            const std::vector<Node *> &roots);
 
     static std::pair<game::Move, Node *> run_mcts(game::Game *game, decider::Decider *move_ranker);
-    static std::pair<game::Move, Node *> run_mcts(game::Game *game, decider::Decider *move_ranker, Node *root);
+
+    static int game_move_count;
 
   private:
-    static const int NUM_SIMULATIONS = 500;
+    static const int SIMULATION_SEARCH_DEPTH = 8; // TODO decide 1 or 20 or unlimited depth search
+    static const int NUM_SIMULATIONS_PER_THREAD = 125;
     static const int DEFAULT_NUM_THREADS = 4;
 
     static void mcts(game::Game *game, decider::Decider *move_ranker, Node *root, std::atomic_int &count);

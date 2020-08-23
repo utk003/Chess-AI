@@ -24,8 +24,7 @@ GLuint graphics::loadShaders(const char *vertex_file_path, const char *fragment_
     VertexShaderCode = sstr.str();
     VertexShaderStream.close();
   } else {
-    printf("Unable to open %s. \n", vertex_file_path);
-    getchar();
+    std::cerr << "Unable to open " << vertex_file_path << "." << std::endl;
     return 0;
   }
 
@@ -38,8 +37,7 @@ GLuint graphics::loadShaders(const char *vertex_file_path, const char *fragment_
     FragmentShaderCode = sstr.str();
     FragmentShaderStream.close();
   } else {
-    printf("Unable to open %s. \n", fragment_file_path);
-    getchar();
+    std::cerr << "Unable to open " << fragment_file_path << "." << std::endl;
     return 0;
   }
 

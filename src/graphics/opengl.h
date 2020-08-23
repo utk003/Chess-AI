@@ -29,12 +29,10 @@ class OpenGL {
   private:
     static std::map<GLFWwindow *, OpenGL *> _opengl_map;
 
+    inline const static std::string ASSET_2D_DIRECTORY = "assets/2D/";
+    std::string asset_file_path;
+
     OpenGL(game::Game *g, const std::string &game_name);
-
-    inline const static std::string ASSETS_2D_FILE_PATH_HEADER = "../assets/2D/";
-    std::string asset_file_path_header;
-
-
     void initialize();
 
     static GLuint getCoordBuffer(int rInt, int cInt);

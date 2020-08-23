@@ -25,7 +25,7 @@ class Player {
     inline piece::PieceColor color() { return _color; }
     inline player::PlayerType type() { return _type; }
 
-    virtual void playNextMove() = 0; // called by game when its this player's turn to move
+    void playNextMove(); // called by game when its this player's turn to move
 
   protected:
     game::Game *_game;
@@ -33,8 +33,14 @@ class Player {
     piece::PieceColor _color{};
     player::PlayerType _type{};
 
+    int _move_count_at_start;
+
     void playMove(const game::Move &m);
     void playRandomMove();
+
+    virtual void findAndPlayMove() = 0;
+    [[nodiscard]] bool moveOverByUndo() const;
+    [[nodiscard]] bool moveOver() const;
 };
 
 class HumanPlayer : public Player {
@@ -45,7 +51,7 @@ class HumanPlayer : public Player {
 
     HumanPlayer(game::Game *g, piece::PieceColor c);
     ~HumanPlayer() override;
-    void playNextMove() override;
+    void findAndPlayMove() override;
 
     void clickSquare(int r, int c);
     void setPawnUpgradeType(piece::PieceType type);
@@ -62,7 +68,7 @@ class RandomPlayer : public Player {
 
     RandomPlayer(game::Game *g, piece::PieceColor c);
     ~RandomPlayer() override;
-    void playNextMove() override;
+    void findAndPlayMove() override;
 };
 
 class MinimaxPlayer : public Player {
@@ -73,7 +79,7 @@ class MinimaxPlayer : public Player {
 
     MinimaxPlayer(game::Game *g, piece::PieceColor c);
     ~MinimaxPlayer() override;
-    void playNextMove() override;
+    void findAndPlayMove() override;
 
   protected:
     game::Board *_simulation_board;
@@ -105,7 +111,7 @@ class AlphaBetaPlayer : public MinimaxPlayer {
 
     AlphaBetaPlayer(game::Game *g, piece::PieceColor c);;
     ~AlphaBetaPlayer() override;
-    void playNextMove() override;
+    void findAndPlayMove() override;
 
   protected:
     int currentBoardScore() override;
@@ -129,7 +135,7 @@ class MonteCarloPlayer : public Player {
 
     MonteCarloPlayer(game::Game *g, piece::PieceColor c);
     ~MonteCarloPlayer() override;
-    void playNextMove() override;
+    void findAndPlayMove() override;
 
   protected:
     MonteCarloPlayer(game::Game *g, piece::PieceColor c, player::PlayerType t);
@@ -144,7 +150,7 @@ class NetworkAIPlayer : public MonteCarloPlayer {
 
     NetworkAIPlayer(game::Game *g, piece::PieceColor c);
     ~NetworkAIPlayer() override;
-    void playNextMove() override;
+    void findAndPlayMove() override;
 
   private:
 

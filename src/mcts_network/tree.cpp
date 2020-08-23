@@ -10,6 +10,7 @@
 #include <functional>
 #include <atomic>
 #include <iostream>
+#include <climits>
 
 #include "../chess/game.h"
 #include "decider.h"
@@ -84,7 +85,7 @@ void tree::Node::addNoise(double frac, const double *noise) {
 
 std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::function<double(Node *, Node *)> &ranker) {
   std::pair<game::Move, Node *> optimal{game::Move(-1, -1, -1, -1, piece::PieceType::NONE), nullptr};
-  double max_score = -1.0, score = -1.0;
+  double max_score = -1.0, score;
 
   for (auto &it : _children) {
     score = ranker(this, it.second);
@@ -94,12 +95,8 @@ std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::fun
     }
   }
 
-  if (optimal.second == nullptr) {
-//    std::cout << _children.size() << std::endl;
-//    std::cout << optimal.first.toString() << std::endl;
-//    std::cout << max_score << " " << score << std::endl;
+  if (optimal.second == nullptr)
     debug_assert();
-  }
   return optimal;
 }
 
@@ -126,6 +123,8 @@ tree::Node *tree::Node::combineNodes(const std::vector<Node *> &nodes, int num_n
 }
 
 // Monte Carlo Tree Search class
+int tree::MCTS::game_move_count = -1;
+
 std::pair<game::Move, tree::Node *>
 tree::MCTS::run_mcts_multithreaded(game::Game *game, decider::Decider *move_ranker) {
   return run_mcts_multithreaded(game, DEFAULT_NUM_THREADS, move_ranker);
@@ -152,7 +151,7 @@ tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::D
     num_threads = roots.size();
   }
 
-  std::atomic_int counter{NUM_SIMULATIONS};
+  std::atomic_int counter{NUM_SIMULATIONS_PER_THREAD * num_threads};
   std::vector<game::Game *> clones(num_threads);
   for (int i = 0; i < num_threads; ++i) {
     clones[i] = game->clone();
@@ -163,7 +162,14 @@ tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::D
     thread::create(mcts, clones[i], move_ranker, roots[i], std::ref(counter));
   }
 
-  thread::wait_for([&] { return counter <= -num_threads; });
+  bool terminated_early = false;
+  thread::do_while_waiting_for([&] {
+    if (game_move_count != game->board()->move_count()) {
+      terminated_early = true;
+      game_move_count = -1;
+      counter.store(0);
+    }
+  }, [&] { return terminated_early || counter <= -num_threads; });
 
   for (auto &clone: clones)
     delete clone;
@@ -174,18 +180,7 @@ tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::D
 }
 
 std::pair<game::Move, tree::Node *> tree::MCTS::run_mcts(game::Game *game, decider::Decider *move_ranker) {
-  return run_mcts(game, move_ranker, new Node(game->getCurrentColor()));
-}
-std::pair<game::Move, tree::Node *> tree::MCTS::run_mcts(game::Game *game, decider::Decider *move_ranker, Node *root) {
-  game::Game *clone = game->clone();
-  expand_node(root, clone, move_ranker);
-  add_dirichlet_noise(root);
-  delete clone;
-
-  std::atomic_int counter{NUM_SIMULATIONS};
-  mcts(game, move_ranker, root, std::ref(counter));
-
-  return {select_optimal_move(root).first, root};
+  return run_mcts_multithreaded(game, 1, move_ranker);
 }
 
 void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *root, std::atomic_int &count) {
@@ -193,16 +188,14 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
   game::Game *clone;
   std::vector<Node *> searchPath;
 
-  double value;
-
-  int i;
   while (count-- > 0) {
     node = root;
     clone = game->clone();
     searchPath = {root};
 
-    i = 0;
-    while (!clone->isOver() && i < 1) { // TODO decide 1 or 20 or unlimited depth search
+    for (int i = 0; i < SIMULATION_SEARCH_DEPTH; ++i) {
+      if (clone->isOver())
+        break;
       if (!node->expanded())
         expand_node(node, clone, move_ranker);
 
@@ -219,11 +212,12 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       }
 
       searchPath.push_back(node);
-      ++i;
     }
 
+    int curr_color_code = clone->getCurrentColor().colorCode();
+    double value;
     // If game is over
-    if (clone->isOver())
+    if (clone->isOver()) {
       // If black has won, that means current color is white
       // Thus, value is ((1 * -1) + 1) / 2 = 0, which is fine b/c current node (white) lost
 
@@ -232,9 +226,17 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
 
       // If game is drawn:
       // value is ((±1 * 0) + 1) / 2 = 0.5, which is correct b/c it is a draw
-      value = (clone->getCurrentColor().colorCode() * clone->getResult().evaluate() + 1.0) / 2.0;
-    else // game is not over
-      value = 0.5; // unknown outcome... assume 0.5 -> TODO find better default result
+      value = (curr_color_code * clone->getResult().evaluate() + 1.0) / 2.0;
+    } else { // game is not over
+      // unknown outcome... using minimax board scoring -> TODO find better default result - finished??
+      value = clone->board()->score(
+        [&](piece::Piece *piece) -> double {
+          return curr_color_code * piece->color().colorCode() * piece->type().minimaxValue();
+        }
+      );
+      // now apply sigmoid to value -> (-∞, ∞) maps to (0.0, 1.0)
+      value = 1.0 / (1.0 + exp(-value / 27.18));
+    }
 
     propagate_result(searchPath, value, clone->getCurrentColor());
 
@@ -255,31 +257,21 @@ std::pair<game::Move, tree::Node *> tree::MCTS::select_optimal_move(Node *parent
 
 // UCB algorithm
 double tree::MCTS::score_move(Node *parent, Node *child) {
-//  // Straight from Google/DeepMind's AlphaZero paper
-//  const double BASE_MULTIPLIER_BASE = 19652.0;    // original
-//  const double BASE_MULTIPLIER_INIT = 1.25;       // original
-//
-//  double base = log((parent->visit_count() + BASE_MULTIPLIER_BASE + 1.0) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
-//  base *= sqrt(parent -> visit_count()) / (child -> visit_count() + 1);
-
-  // Modified exploration scoring
-   const double BASE_MULTIPLIER_BASE = 1965.0;  // modified
-   const double BASE_MULTIPLIER_INIT = 2.75;    // modified
+  // Straight from Google/DeepMind's AlphaZero paper
+  const double BASE_MULTIPLIER_BASE = 19652.0;    // original
+  const double BASE_MULTIPLIER_INIT = 1.25;       // original
 
   double base = log((parent->visit_count() + BASE_MULTIPLIER_BASE + 1.0) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
-  base *= sqrt(log(parent->visit_count() + 1) / (child->visit_count() + 1)); // exploration term
+  base *= sqrt(parent->visit_count()) / (child->visit_count() + 1);
   return base * child->priority() + child->value();
 
-//  double value = base * child->priority() + child->value();
-//  if (std::isnan(value)) {
-//    debug_assert();
-//    value = 0.0;
-//  }
-//  else if (value < 0.0) {
-//    debug_assert();
-//    value = 0.0;
-//  }
-//  return value;
+//  // Modified exploration scoring
+//  const double BASE_MULTIPLIER_BASE = 1965.0;  // modified
+//  const double BASE_MULTIPLIER_INIT = 2.75;    // modified
+//
+//  double base = log((parent->visit_count() + BASE_MULTIPLIER_BASE + 1.0) / BASE_MULTIPLIER_BASE) + BASE_MULTIPLIER_INIT;
+//  base *= sqrt(log(parent->visit_count() + 1) / (child->visit_count() + 1)); // exploration term
+//  return base * child->priority() + child->value();
 }
 
 double tree::MCTS::expand_node(tree::Node *node, game::Game *game, decider::Decider *move_ranker) {
@@ -307,9 +299,17 @@ double tree::MCTS::expand_node(tree::Node *node, game::Game *game, decider::Deci
 }
 
 void tree::MCTS::add_dirichlet_noise(Node *node) {
-  gsl_rng *rng = gsl_rng_alloc(gsl_rng_default);
-  const double DIRICHLET_NOISE_ALPHA_VALUE = 0.15; // Straight from Google/DeepMind's AlphaZero paper - 0.2 original
-  const double EXPLORATION_FRACTION_RATIO = 0.35; // Straight from Google/DeepMind's AlphaZero paper - 0.25 original
+  // set up rng
+  gsl_rng *rng = gsl_rng_alloc(gsl_rng_mt19937);
+  gsl_rng_set(rng, (long) ((double) LONG_MAX * math::random()));
+
+  // Straight from Google/DeepMind's AlphaZero paper
+  const double DIRICHLET_NOISE_ALPHA_VALUE = 0.2;
+  const double EXPLORATION_FRACTION_RATIO = 0.25;
+
+//  // Modified exploration values
+//  const double DIRICHLET_NOISE_ALPHA_VALUE = 0.15;
+//  const double EXPLORATION_FRACTION_RATIO = 0.35;
 
   int size = node->countChildren();
 

@@ -41,6 +41,18 @@ class Randomizer : public Decider {
     double predictPosition(game::Board *b) override;
 };
 
+class Minimaxer : public Decider {
+  public:
+    Minimaxer() = default;
+    Minimaxer(const Randomizer &d) = delete;
+    Minimaxer &operator=(const Randomizer &d) = delete;
+
+    ~Minimaxer() override = default; // Do nothing
+
+  protected:
+    double predictPosition(game::Board *b) override;
+};
+
 }
 
 #endif // CHESS_AI_MCTS_NETWORK_DECIDER_H_
