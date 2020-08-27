@@ -7,6 +7,7 @@
 #include <string>
 
 #include "../chess/game.h"
+#include "../util/string_util.h"
 
 std::map<GLFWwindow *, graphics::OpenGL *> graphics::OpenGL::_opengl_map;
 
@@ -36,7 +37,7 @@ graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
     return;
   }
   _game = game;
-  _board = game->board();
+  _board = game->board()->clone();
 
   asset_file_path = ASSET_2D_DIRECTORY;
 
@@ -63,6 +64,7 @@ graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
 
 graphics::OpenGL::~OpenGL() {
   _opengl_map.erase(_window);
+  delete _board; // -> b/c it's a clone
 
   // Clean up shader
   glDeleteProgram(_shader_programID);
@@ -139,16 +141,16 @@ void graphics::OpenGL::loadTextures() {
   for (const std::string &backColor: backColors) {
     for (const std::string &name: pieceNames)
       for (const std::string &pieceColor: pieceColors) {
-        str = asset_file_path + "piece/" + backColor + "-" + pieceColor + "_" + name + ".png";
+        str = string::combine({asset_file_path, "piece/", backColor, "-", pieceColor, "_", name, ".png"});
         loadTexture(str, _texture_map);
       }
-    str = asset_file_path + "piece/" + backColor + "-transparent.png";
+    str = string::combine({asset_file_path, "piece/", backColor, "-transparent.png"});
     loadTexture(str, _texture_map);
   }
 
   std::string boardUI[4] = {"selected", "previous_move", "normal_move", "attacking_move"};
   for (const std::string &name: boardUI) {
-    str = asset_file_path + "overlay/" + name + ".png";
+    str = string::combine({asset_file_path, "overlay/", name, ".png"});
     loadTexture(str, _texture_map);
   }
 }
@@ -190,7 +192,7 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode
         break;
 
       case GLFW_KEY_Z:
-        _board->undoMove(_game);
+        _game->board()->undoMove(_game);
         break;
 
       case GLFW_KEY_S:
@@ -248,6 +250,9 @@ void graphics::OpenGL::initialize() {
     return;
   }
 
+  // Tell game which graphics engine is active
+  _game->setGraphics(this);
+
   // Ensure we can capture the escape key being pressed below
   glfwSetInputMode(_window, GLFW_STICKY_KEYS, GL_TRUE);
 
@@ -284,9 +289,30 @@ void graphics::OpenGL::initialize() {
   _texture_samplerID = glGetUniformLocation(_shader_programID, "texture_sampler");
 }
 
+void graphics::OpenGL::updateGraphics(game::Board *new_board) {
+  if (new_board == nullptr) {
+    debug_assert();
+    return;
+  }
+
+  delete _temp_board;
+  _temp_board = new_board;
+}
+
+void graphics::OpenGL::checkBoardUpdate() {
+  if (_temp_board == nullptr)
+    return;
+
+  delete _board;
+  _board = _temp_board;
+  _temp_board = nullptr;
+}
+
 void graphics::OpenGL::run() {
   int r, c, len = _board->length(), wid = _board->width();
   do {
+    checkBoardUpdate();
+
     if (_game->isOver()) {
       game::GameResult result = _game->getResult();
       if (result.isBlackWin())
@@ -326,8 +352,8 @@ void graphics::OpenGL::run() {
     for (r = 0; r < len; ++r)
       for (c = 0; c < wid; ++c) {
         int backColorIndex = (r + c) % 2;
-        piece::Piece *piece = _board->getPiece(r, c);
-        filePath = asset_file_path + "piece/" + std::to_string(backColorIndex) + "-" + piece->image_file_path();
+        filePath = _board->getPiece(r, c)->image_file_path();
+        filePath = string::combine({asset_file_path, "piece/", std::to_string(backColorIndex), "-", filePath});
 
         renderSquare(r, c, textbuff, filePath);
       }

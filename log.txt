@@ -100,3 +100,10 @@ Upgrade to training -> More aggressive training reps, more aggressive mcts, stor
 Updated debugging tools -> Stack trace
 Better usability -> Tries to automatically detect correct working directory + can be given absolute path as argument
 General code cleanup
+
+
+
+August 27, 2020
+---------------
+Fixed board/double output print
+Better usability -> easier to configure parameters for MCTS, training, etc.

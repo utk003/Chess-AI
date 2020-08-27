@@ -121,6 +121,8 @@ class Optimizer : NetworkManager {
     optimize(Network *network, game::Board *input, double TARGET_OUTPUT, double &lambda, double MAX_LEARNING_CONSTANT,
              double LEARNING_RATE);
 
+    static void dropout(Network *network, double dropout_rate = 0.01);
+
     static constexpr double DEFAULT_MAX_LEARNING_CONSTANT = 15.0;
     static constexpr double DEFAULT_LEARNING_RATE = 1.1;
     static constexpr double DEFAULT_INITIAL_LAMBDA = 2.0;

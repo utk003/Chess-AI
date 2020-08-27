@@ -16,6 +16,7 @@
 #include "piece.h"
 #include "../player/player.h"
 #include "../util/assert_util.h"
+#include "../graphics/opengl.fwd.h"
 
 // The "game" namespace: See game.fwd.h
 namespace game {
@@ -77,8 +78,10 @@ class Board : piece::PieceManager {
 
     [[nodiscard]] Board *clone() const;
 
-    std::ofstream saveToFile(const std::string &fileName);
-    std::ifstream loadFromFile(const std::string &fileName);
+    void saveToFile(const std::string &fileName,
+                    const std::function<void(std::ofstream &)> &do_later = [](std::ofstream &out) -> void {});
+    void loadFromFile(const std::string &fileName,
+                      const std::function<void(std::ifstream &)> &do_later = [](std::ifstream &in) -> void {});
 
     [[nodiscard]] int move_count() const { return _move_count.operator int(); }
 
@@ -209,6 +212,9 @@ class Game : BoardController, piece::PieceManager {
     [[nodiscard]] inline player::Player *black_player() const { return _black_player; }
 
     void setPlayer(piece::PieceColor color, player::PlayerType type);
+    void setGraphics(graphics::OpenGL *graphics);
+
+    void updateGraphicsBoard(Board *new_board);
 
     void startGame();
     void endGame();
@@ -229,6 +235,8 @@ class Game : BoardController, piece::PieceManager {
 
   private:
     Board *_board;
+    graphics::OpenGL *_graphics;
+
     int _selected_x, _selected_y;
     piece::PieceColor _current_player_color{};
 
@@ -243,7 +251,7 @@ class Game : BoardController, piece::PieceManager {
 
     int _moves_since_last_capture;
 
-    GameResult _result;
+    GameResult _result{};
 };
 
 }

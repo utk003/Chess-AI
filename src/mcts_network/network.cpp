@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include "tree.h"
+#include "../util/string_util.h"
 
 // Network class
 network::Network::Network() : Network({64, 144, 225, 100, 1}) {}
@@ -252,6 +253,19 @@ void network::Optimizer::optimize(Network *network, game::Board *input, const do
   }
 }
 
+void network::Optimizer::dropout(Network *network, double dropout_rate) {
+  std::vector<int> &dimensions = get_dimensions(network);
+  int network_size = dimensions.size();
+  std::vector<std::vector<std::vector<double>>> &connections = get_connections(network);
+
+  int layer, index, next_index;
+  for (layer = 0; layer < network_size - 1; ++layer)
+    for (index = 0; index < dimensions[layer]; ++index)
+      for (next_index = 0; next_index < dimensions[layer + 1]; ++next_index)
+        if (math::chance(dropout_rate))
+          connections[layer][index][next_index] = math::random(-1.0, 1.0);
+}
+
 // NetworkStorage Class
 network::Network *network::NetworkStorage::_current_network = nullptr;
 long network::NetworkStorage::_network_count = 0;
@@ -380,7 +394,7 @@ std::ostream &operator<<(std::ostream &output, Network *&net) {
     for (n = 0; n < net->_num_layers - 1; ++n)
       for (i = 0; i < net->_dimensions[n]; ++i)
         for (j = 0; j < net->_dimensions[n + 1]; ++j)
-          output << net->_connections[n][i][j] << " ";
+          output << string::from_double(net->_connections[n][i][j]) << " ";
   } else debug_assert();
 
   return output;

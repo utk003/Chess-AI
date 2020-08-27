@@ -8,6 +8,7 @@
 
 #include "piece.h"
 #include "../util/thread_util.h"
+#include "../graphics/opengl.h"
 
 // Board Class
 game::Board::Board(int l, int w) {
@@ -247,8 +248,10 @@ bool game::Board::doMove(Move *move, Game *game) {
 
   bool isCaptureMove = move->doMove(this);
 
-  if (game != nullptr)
+  if (game != nullptr) {
     game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
+    game->updateGraphicsBoard(clone());
+  }
 
   return isCaptureMove;
 }
@@ -267,6 +270,7 @@ void game::Board::undoMove(Game *game) {
 
   if (game != nullptr) {
     game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
+    game->updateGraphicsBoard(clone());
     game->resetSelection();
     game->updateGameState();
   }
@@ -338,23 +342,22 @@ std::ostream &operator<<(std::ostream &output, Board *&b) {
 
 }
 
-std::ofstream game::Board::saveToFile(const std::string &fileName) {
+void game::Board::saveToFile(const std::string &fileName, const std::function<void(std::ofstream &)> &do_later) {
   std::ofstream out_stream("game_state/" + fileName + ".txt");
-  if (out_stream.is_open())
-    out_stream << this;
-  else debug_assert();
-
-  return out_stream;
+  if (out_stream.is_open()) {
+    Board *b = this;
+    out_stream << b;
+    do_later(out_stream);
+  } else debug_assert();
 }
 
-std::ifstream game::Board::loadFromFile(const std::string &fileName) {
+void game::Board::loadFromFile(const std::string &fileName, const std::function<void(std::ifstream &)> &do_later) {
   std::ifstream in_stream(fileName);
   if (in_stream.is_open()) {
     Board *b = this;
     in_stream >> b;
+    do_later(in_stream);
   } else debug_assert();
-
-  return in_stream;
 }
 
 // Move Class
@@ -670,6 +673,7 @@ game::Game::Game(int length, int width) : Game(new Board(length, width)) {}
 
 game::Game::Game(Board *b) {
   _board = b;
+  _graphics = nullptr;
 
   _started = false;
   _over = false;
@@ -707,10 +711,28 @@ void game::Game::setPlayer(piece::PieceColor color, player::PlayerType type) {
 
   player::Player *player = type.getPlayerOfType(this, color);
 
-  if (color.isWhite())
+  if (color.isWhite()) {
+    delete _white_player;
     _white_player = player;
-  else // if (color.isBlack())
+  }
+  else /* if (color.isBlack()) */ {
+    delete _black_player;
     _black_player = player;
+  }
+}
+
+void game::Game::setGraphics(graphics::OpenGL *graphics) {
+  if (graphics == nullptr) {
+    debug_assert();
+    return;
+  }
+
+  delete _graphics;
+  _graphics = graphics;
+}
+
+void game::Game::updateGraphicsBoard(Board *new_board) {
+  _graphics->updateGraphics(new_board);
 }
 
 void game::Game::startGame() {
@@ -719,6 +741,11 @@ void game::Game::startGame() {
     return;
   }
   if (_black_player == nullptr) {
+    debug_assert();
+    return;
+  }
+
+  if (_graphics == nullptr) {
     debug_assert();
     return;
   }

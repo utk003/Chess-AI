@@ -269,7 +269,7 @@ std::istream &operator>>(std::istream &input, Piece *&p) {
   std::string mod;
 
   input >> t >> c >> mod;
-  p = PieceManager::getPieceOfTypeAndColor(t, c, string::boolean(mod));
+  p = PieceManager::getPieceOfTypeAndColor(t, c, string::to_bool(mod));
 
   return input;
 }
@@ -302,6 +302,7 @@ std::ostream &operator<<(std::ostream &output, Piece *&p) {
     case PieceType::BISHOP: {
       auto *b = (Bishop *) p;
       output << b;
+      break;
     }
 
     case PieceType::PAWN: {
@@ -320,7 +321,7 @@ std::ostream &operator<<(std::ostream &output, Piece *&p) {
 }
 
 std::ostream &operator<<(std::ostream &output, King *&k) {
-  output << k->_type << " " << k->_color << " " << string::string(k->_moved);
+  output << k->_type << " " << k->_color << " " << string::from_bool(k->_moved);
   return output;
 }
 
@@ -330,7 +331,7 @@ std::ostream &operator<<(std::ostream &output, Queen *&q) {
 }
 
 std::ostream &operator<<(std::ostream &output, Rook *&r) {
-  output << r->_type << " " << r->_color << " " << string::string(r->_moved);
+  output << r->_type << " " << r->_color << " " << string::from_bool(r->_moved);
   return output;
 }
 
@@ -345,7 +346,7 @@ std::ostream &operator<<(std::ostream &output, Bishop *&b) {
 }
 
 std::ostream &operator<<(std::ostream &output, Pawn *&p) {
-  output << p->_type << " " << p->_color << " " << string::string(p->_moved2x);
+  output << p->_type << " " << p->_color << " " << string::from_bool(p->_moved2x);
   return output;
 }
 

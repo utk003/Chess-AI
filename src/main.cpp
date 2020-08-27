@@ -1,5 +1,4 @@
 #include <iostream>
-#include <functional>
 #include <chrono>
 #include <ctime>
 #include <utility>
@@ -8,8 +7,10 @@
 #include "chess/game.h"
 #include "graphics/opengl.h"
 #include "mcts_network/network.h"
+#include "mcts_network/tree.h"
 #include "util/thread_util.h"
 #include "util/math_util.h"
+#include "util/string_util.h"
 
 int run_game() {
   network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
@@ -18,7 +19,7 @@ int run_game() {
   game->board()->loadFromFile("assets/game_states/chess_default_start.txt");
 
   game->setPlayer(piece::PieceColor::WHITE, player::PlayerType::HUMAN);
-  game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::MCTS);
+  game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::HUMAN);
 
   // start graphics engine
   graphics::OpenGL *openGL = graphics::OpenGL::get_instance(game, "Chess");
@@ -41,7 +42,7 @@ int run_game() {
   return 0;
 }
 
-int NETWORK_SAVE_INTERVAL = 0;
+int NETWORK_SAVE_INTERVAL = 20;
 
 game::GameResult create_game_training_case() {
   auto *game = new game::Game(new game::Board(8, 8));
@@ -81,11 +82,8 @@ run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_
     // update
     pair.second = get_overall_result(20.0, pair.second, result.evaluate());
     // save case to file
-    std::ofstream stream = pair.first->saveToFile("training_case/case_" + std::to_string(file_counter++));
-    if (stream.is_open()) {
-      stream << pair.second << std::endl;
-      stream.close();
-    }
+    pair.first->saveToFile("training_case/case_" + std::to_string(file_counter++),
+                           [&](std::ostream &out) -> void { out << string::from_double(pair.second) << std::endl; });
   }
 
   // Set up network training parameters
@@ -115,9 +113,9 @@ run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_
   std::cout << "Completed Iteration #" << TRAINING_INDEX << ": " << ctime(&time1);
 }
 
-bool load_prev_network = false;
+bool LOAD_PREV_NETWORK = false;
+int NUM_TRAINING_ITERATIONS = 1;
 int train_network() {
-  NETWORK_SAVE_INTERVAL = 20;
   network::NetworkStorage::SAVE_NETWORKS = true;
 
   std::vector<std::pair<game::Board *, double>> boards_to_train_on;
@@ -130,13 +128,11 @@ int train_network() {
     }
   });
 
-  load_prev_network = true;
-  if (load_prev_network)
+  if (LOAD_PREV_NETWORK)
     network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
   else
     network::NetworkStorage::initialize();
 
-  const int NUM_TRAINING_ITERATIONS = 1;
   for (int i = 1; i <= NUM_TRAINING_ITERATIONS; ++i)
     run_training_iteration(boards_to_train_on, i);
 
@@ -145,18 +141,21 @@ int train_network() {
 }
 
 int test() {
-  math::random();
+  double d = 723498234.412342;
+  std::cout << string::from_double(d) << std::endl;
   return 0;
 }
 
 // Directory methods/macros
 #include <filesystem>
+
 #ifdef _WIN32
 #  include <direct.h>
-#  // MSDN recommends against using getcwd & chdir names
-#  define cd _chdir
+#  define cd _chdir // MSDN recommends against using chdir name
 #else
-#  include "unistd.h"
+
+#  include <unistd.h>
+
 #  define cd chdir
 #endif
 
@@ -190,10 +189,28 @@ bool isAbsolute(const std::string &dir) {
 }
 
 void updateWorkingDirectory(const std::string &target_dir = "Chess AI") {
-  if (isAbsolute(target_dir))
-    cd(target_dir.c_str());
-  else {
+  if (isAbsolute(target_dir)) {
+    std::string target = target_dir;
+    auto lenMin1 = target.length() - 1;
+    if (target[lenMin1] == '/' || target[lenMin1] == '\\')
+      target = target.substr(0, lenMin1);
+
+    cd(target.c_str());
+    if (std::filesystem::current_path() != target) {
+      std::cerr << "Invalid working directory" << std::endl;
+      fatal_assert();
+    }
+  } else {
+    if (target_dir.find_last_of("/\\") != std::string::npos) {
+      debug_assert();
+      return;
+    }
+
     std::string current_path = std::filesystem::current_path();
+    if (current_path.find(target_dir) == std::string::npos) {
+      debug_assert();
+      return;
+    }
 
     std::string suffix = last_dir(current_path);
     while (suffix != target_dir) {
@@ -201,17 +218,54 @@ void updateWorkingDirectory(const std::string &target_dir = "Chess AI") {
       suffix = last_dir(current_path);
       cd("..");
     }
-    auto lenMin1 = current_path.length() - 1;
-    if (current_path[lenMin1] == '/' || current_path[lenMin1] == '\\')
-      current_path = current_path.substr(0, lenMin1);
   }
 }
 
-int main(int num_args, char **args) {
+void updateMCTSParameters() {
+  int num_available_threads = (int) std::thread::hardware_concurrency();
+
+  tree::MCTS::DEFAULT_NUM_THREADS = std::max(num_available_threads - 4, 1);
+  tree::MCTS::SIMULATION_SEARCH_DEPTH = 8;
+  tree::MCTS::NUM_SIMULATIONS_PER_THREAD = 125;
+
+  std::cout << "Number of Available Threads: " << num_available_threads << std::endl;
+  std::cout << "Number of MCTS Working Threads: " << tree::MCTS::DEFAULT_NUM_THREADS << std::endl;
+}
+
+void updateWorkingDirectory(int num_args, char **args) {
   if (num_args <= 1)
     updateWorkingDirectory();
   else
-    updateWorkingDirectory(args[1]);
+    updateWorkingDirectory(args[1]); // args[0] is the command used to run this program??
 
-  return run_game();
+  std::cout << "Current Working Directory: " << std::filesystem::current_path() << std::endl;
+}
+
+void updateTrainingParameters() {
+  LOAD_PREV_NETWORK = false;
+  std::cout << (LOAD_PREV_NETWORK ? "Loading previous network (from \"network-dump/latest.txt\")"
+                                  : "Generating new random network") << std::endl;
+
+  NUM_TRAINING_ITERATIONS = 1;
+  std::cout << "Number of Training Iterations: " << NUM_TRAINING_ITERATIONS << " iteration";
+  if (NUM_TRAINING_ITERATIONS != 1)
+    std::cout << "s";
+  std::cout << std::endl;
+
+  NETWORK_SAVE_INTERVAL = 20;
+  std::cout << "Network Save Interval: " << NETWORK_SAVE_INTERVAL << " iterations" << std::endl;
+}
+
+int main(int num_args, char **args) {
+  updateWorkingDirectory(num_args, args);
+  std::cout << std::endl;
+
+  updateMCTSParameters();
+  std::cout << std::endl;
+
+  updateTrainingParameters();
+  std::cout << std::endl;
+
+//  return train_network();
+  return 0;
 }

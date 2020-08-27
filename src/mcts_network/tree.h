@@ -78,11 +78,11 @@ class MCTS {
 
     static int game_move_count;
 
-  private:
-    static const int SIMULATION_SEARCH_DEPTH = 8; // TODO decide 1 or 20 or unlimited depth search
-    static const int NUM_SIMULATIONS_PER_THREAD = 125;
-    static const int DEFAULT_NUM_THREADS = 4;
+    static int SIMULATION_SEARCH_DEPTH;
+    static int NUM_SIMULATIONS_PER_THREAD;
+    static int DEFAULT_NUM_THREADS;
 
+  private:
     static void mcts(game::Game *game, decider::Decider *move_ranker, Node *root, std::atomic_int &count);
 
     static double expand_node(Node *node, game::Game *game, decider::Decider *move_ranker);

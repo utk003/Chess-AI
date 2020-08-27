@@ -124,6 +124,9 @@ tree::Node *tree::Node::combineNodes(const std::vector<Node *> &nodes, int num_n
 
 // Monte Carlo Tree Search class
 int tree::MCTS::game_move_count = -1;
+int tree::MCTS::SIMULATION_SEARCH_DEPTH = 8; // TODO decide 1 or 20 or unlimited depth search
+int tree::MCTS::NUM_SIMULATIONS_PER_THREAD = 125;
+int tree::MCTS::DEFAULT_NUM_THREADS = 4;
 
 std::pair<game::Move, tree::Node *>
 tree::MCTS::run_mcts_multithreaded(game::Game *game, decider::Decider *move_ranker) {

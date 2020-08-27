@@ -1,6 +1,8 @@
 #ifndef CHESS_AI_GRAPHICS_OPENGL_H_
 #define CHESS_AI_GRAPHICS_OPENGL_H_
 
+#include "opengl.fwd.h"
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -25,6 +27,8 @@ class OpenGL {
     ~OpenGL();
 
     void run();
+
+    void updateGraphics(game::Board *new_board);
 
   private:
     static std::map<GLFWwindow *, OpenGL *> _opengl_map;
@@ -68,6 +72,9 @@ class OpenGL {
 
     game::Game *_game;
     game::Board *_board;
+
+    game::Board *_temp_board;
+    void checkBoardUpdate();
 
     player::Player *_white;
     player::Player *_black;
