@@ -107,3 +107,10 @@ August 27, 2020
 ---------------
 Fixed board/double output print
 Better usability -> easier to configure parameters for MCTS, training, etc.
+
+
+
+August 28, 2020
+---------------
+Fixed bug where game could not run without graphics
+Made initial paramter configuration easier

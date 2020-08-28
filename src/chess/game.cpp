@@ -722,17 +722,13 @@ void game::Game::setPlayer(piece::PieceColor color, player::PlayerType type) {
 }
 
 void game::Game::setGraphics(graphics::OpenGL *graphics) {
-  if (graphics == nullptr) {
-    debug_assert();
-    return;
-  }
-
   delete _graphics;
   _graphics = graphics;
 }
 
 void game::Game::updateGraphicsBoard(Board *new_board) {
-  _graphics->updateGraphics(new_board);
+  if (_graphics != nullptr)
+    _graphics->updateGraphics(new_board);
 }
 
 void game::Game::startGame() {
@@ -741,11 +737,6 @@ void game::Game::startGame() {
     return;
   }
   if (_black_player == nullptr) {
-    debug_assert();
-    return;
-  }
-
-  if (_graphics == nullptr) {
     debug_assert();
     return;
   }
@@ -828,18 +819,20 @@ bool game::Game::tryMove(const Move &move) {
     return false;
 
   // do move
-  bool isCapture = _board->doMove(new Move(move), this);
+  _board->doMove(new Move(move), this);
+//  bool isCapture = _board->doMove(new Move(move), this);
 
-  // check for 50 move no-capture stalemate
-  if (!isCapture)
-    _moves_since_last_capture++;
-  else
-    _moves_since_last_capture = 0;
-
-  if (_moves_since_last_capture >= 50) { // 50 non-capture moves = Stalemate
-    _over = true;
-    _result = game::GameResult::STALEMATE;
-  } else
+  // TODO -> replace 50 move no-capture stalemate mechanic
+//  // check for 50 move no-capture stalemate
+//  if (!isCapture)
+//    _moves_since_last_capture++;
+//  else
+//    _moves_since_last_capture = 0;
+//
+//  if (_moves_since_last_capture >= 50) { // 50 non-capture moves = Stalemate
+//    _over = true;
+//    _result = game::GameResult::STALEMATE;
+//  } else
     updateGameState();
 
   // move complete

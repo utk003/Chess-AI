@@ -64,7 +64,7 @@ game::GameResult create_game_training_case() {
   return result;
 }
 
-double get_overall_result(double scale, double mcts_result, double game_result) {
+double get_overall_result(double mcts_result, double game_result, double scale = 20.0) {
   static double mcts_weight = 5.0;
   static double game_result_weight = 1.0;
   static double weights_sum = mcts_weight + game_result_weight; // 6.0
@@ -80,7 +80,7 @@ run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_
   // Update training case target value
   for (auto &pair : boards_to_train_on) {
     // update
-    pair.second = get_overall_result(20.0, pair.second, result.evaluate());
+    pair.second = get_overall_result(pair.second, result.evaluate());
     // save case to file
     pair.first->saveToFile("training_case/case_" + std::to_string(file_counter++),
                            [&](std::ostream &out) -> void { out << string::from_double(pair.second) << std::endl; });
@@ -188,7 +188,7 @@ bool isAbsolute(const std::string &dir) {
 #endif
 }
 
-void updateWorkingDirectory(const std::string &target_dir = "Chess AI") {
+void updateWorkingDirectory(const std::string &target_dir = "Chess-AI") {
   if (isAbsolute(target_dir)) {
     std::string target = target_dir;
     auto lenMin1 = target.length() - 1;
@@ -266,6 +266,5 @@ int main(int num_args, char **args) {
   updateTrainingParameters();
   std::cout << std::endl;
 
-//  return train_network();
-  return 0;
+  return train_network();
 }
