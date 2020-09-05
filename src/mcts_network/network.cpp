@@ -331,7 +331,6 @@ void network::NetworkStorage::saveNetwork() {
 
 void network::NetworkStorage::saveLatestNetwork() {
   if (SAVE_NETWORKS) {
-    // TODO finalize network dump system
     std::ofstream new_net_file;
     new_net_file.open(LATEST_NETWORK_FILE_PATH);
     new_net_file << _current_network;

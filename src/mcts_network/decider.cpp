@@ -4,7 +4,7 @@
 
 // Decider class
 std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(game::Game *game) {
-  game::Board *board = game->board();
+  game::Board *board = game->board()->clone(); // TODO see if needs clone() to protect against messed up undoMove()?
 
   piece::PieceColor current_color = game->getCurrentColor();
   int color_multiplier = current_color.colorCode();
@@ -16,10 +16,14 @@ std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(gam
 
   int i;
   for (i = 0; i < moves.size(); ++i) {
-    board->doMove(new game::Move(moves[i]), game);
-    actionMap[moves[i]] = color_multiplier * predictPosition(board);
-    board->undoMove(game);
+    if (moves[i].verify(board)) {
+      board->doMove(new game::Move(moves[i]), game);
+      actionMap[moves[i]] = color_multiplier * predictPosition(board);
+      board->undoMove(game);
+    } else debug_assert();
   }
+
+  delete board; // TODO paired with todo above ^^^ -> remove iff clone() is removed from above
 
   return {currEval, actionMap};
 }

@@ -26,7 +26,8 @@ piece::Piece *piece::PieceType::getPieceOfType(PieceType t, PieceColor c) {
     case NONE:
       return new Piece();
 
-    default: fatal_assert();
+    default:
+      fatal_assert();
   }
 }
 
@@ -200,8 +201,8 @@ bool piece::Pawn::verifyMove(const game::Move &move, game::Board *board) {
 
     switch (abs(r1 - r2)) {
       case 2:
-        return r1 == homeRow && board->getPiece(r1 + moveDir,
-                                                c1)->type().isEmpty(); // make sure pawn hasn't moved yet && middle square isn't occupied
+        // make sure pawn hasn't moved yet && middle square isn't occupied
+        return r1 == homeRow && board->getPiece(r1 + moveDir, c1)->type().isEmpty();
 
       case 1:
         return true;
@@ -214,16 +215,16 @@ bool piece::Pawn::verifyMove(const game::Move &move, game::Board *board) {
       return false;
 
     if (board->getPiece(r2, c2)->type().isEmpty()) {
-      if (r1 != homeRow + 3 * moveDir) // Must be in fifth row to en passante
+      if (r1 != homeRow + 3 * moveDir) // Must be in fifth row to en passant
         return false;
 
       piece::Piece *jumpPiece = board->getPiece(r1, c2);
-      if (!jumpPiece->type().isPawn()) // Must en passante pawn
+      if (!jumpPiece->type().isPawn()) // Must en passant pawn
         return false;
 
-      return ((piece::Pawn *) jumpPiece)->moved2x(); // En passante valid iff pawn just moved 2x - game::Game must update constantly
+      return ((piece::Pawn *) jumpPiece)->moved2x(); // En passant valid iff pawn just moved 2x - game::Game must update constantly
     }
-    return true; // Otherwise, its good -> no en passante, just classic capture with pawn
+    return true; // Otherwise, its good -> no en passant, just classic capture with pawn
   }
 }
 
@@ -315,7 +316,8 @@ std::ostream &operator<<(std::ostream &output, Piece *&p) {
       output << p->_type << " " << p->_color << " " << ".";
       break;
 
-    default: fatal_assert();
+    default:
+      fatal_assert();
   }
   return output;
 }

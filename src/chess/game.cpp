@@ -256,8 +256,8 @@ bool game::Board::doMove(Move *move, Game *game) {
   return isCaptureMove;
 }
 
-void game::Board::undoMove(Game *game) {
-  if (_move_stack.empty()) {
+void game::Board::undoMove(Game *game, const int depth) {
+  if (depth <= 0 || _move_stack.size() < depth) {
     debug_assert();
     return;
   }
@@ -268,12 +268,15 @@ void game::Board::undoMove(Game *game) {
   _move_stack.pop();
   delete move;
 
-  if (game != nullptr) {
-    game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
-    game->updateGraphicsBoard(clone());
-    game->resetSelection();
-    game->updateGameState();
-  }
+  if (depth == 1) {
+    if (game != nullptr) {
+      game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
+      game->updateGraphicsBoard(clone());
+      game->resetSelection();
+      game->updateGameState();
+    }
+  } else
+    undoMove(game, depth - 1);
 }
 
 game::Move *game::Board::getLastMove() const {
@@ -289,6 +292,9 @@ game::Board *game::Board::clone() const {
 
   newBoard->_pawn_upgrade_type = piece::PieceType::NONE;
   newBoard->_move_count.store(_move_count.operator int());
+
+  if (!_move_stack.empty())
+    newBoard->_move_stack.push(new Move(*_move_stack.top()));
 
   return newBoard;
 }
@@ -714,8 +720,7 @@ void game::Game::setPlayer(piece::PieceColor color, player::PlayerType type) {
   if (color.isWhite()) {
     delete _white_player;
     _white_player = player;
-  }
-  else /* if (color.isBlack()) */ {
+  } else /* if (color.isBlack()) */ {
     delete _black_player;
     _black_player = player;
   }
@@ -741,6 +746,7 @@ void game::Game::startGame() {
     return;
   }
 
+  _is_ready_to_delete = false;
   _started = true;
 
   generatePossibleMoveVectors();
@@ -819,8 +825,7 @@ bool game::Game::tryMove(const Move &move) {
     return false;
 
   // do move
-  _board->doMove(new Move(move), this);
-//  bool isCapture = _board->doMove(new Move(move), this);
+  /* bool isCapture = */ _board->doMove(new Move(move), this);
 
   // TODO -> replace 50 move no-capture stalemate mechanic
 //  // check for 50 move no-capture stalemate
@@ -833,7 +838,7 @@ bool game::Game::tryMove(const Move &move) {
 //    _over = true;
 //    _result = game::GameResult::STALEMATE;
 //  } else
-    updateGameState();
+  updateGameState();
 
   // move complete
   _is_move_complete = true;
@@ -852,8 +857,11 @@ void game::Game::updateGameState() {
     else
       _result = _current_player_color.isWhite() ? game::GameResult::BLACK: game::GameResult::WHITE;
   } else {
-    _over = false;
-    _result = game::GameResult::NONE;
+    if (_over) {
+      _over = false;
+      _result = game::GameResult::NONE;
+      startGame();
+    }
   }
 }
 

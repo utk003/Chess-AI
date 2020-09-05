@@ -14,12 +14,12 @@
 #include "shader.h"
 
 #include "../chess/piece.fwd.h"
-#include "../chess/game.fwd.h"
+#include "../chess/game.h"
 #include "../player/player.h"
 
 namespace graphics {
 
-class OpenGL {
+class OpenGL : game::BoardController {
   public:
     static void run_graphics(game::Game *game, const std::string &game_name);
     static OpenGL *get_instance(game::Game *game, const std::string &game_name);
@@ -46,6 +46,7 @@ class OpenGL {
     void loadTextures();
 
     void renderSquare(int r, int c, GLuint textbuff, const std::string &image_file_path);
+    void renderOverlays(GLuint textbuff);
 
     void mouseClicked(GLFWwindow *window, int button, int action, int mods);
     inline static void onMouseButtonClick(GLFWwindow *window, int button, int action, int mods) {
@@ -65,6 +66,7 @@ class OpenGL {
     }
 
     bool _show_expanded_ui;
+    std::vector<std::vector<bool>> _overlays;
 
     GLFWwindow *_window;
     GLuint _shader_programID, _vaoID, _mvp_matrixID, _texture_samplerID;

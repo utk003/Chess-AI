@@ -12,11 +12,11 @@
 #include "util/math_util.h"
 #include "util/string_util.h"
 
-int run_game() {
+int run_game(const std::string &s = "assets/game_states/chess_default_start.txt") {
   network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
 
   auto *game = new game::Game(new game::Board(8, 8));
-  game->board()->loadFromFile("assets/game_states/chess_default_start.txt");
+  game->board()->loadFromFile(s);
 
   game->setPlayer(piece::PieceColor::WHITE, player::PlayerType::HUMAN);
   game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::HUMAN);
@@ -253,7 +253,10 @@ void updateTrainingParameters() {
   std::cout << std::endl;
 
   NETWORK_SAVE_INTERVAL = 20;
-  std::cout << "Network Save Interval: " << NETWORK_SAVE_INTERVAL << " iterations" << std::endl;
+  std::cout << "Network Save Interval: " << NETWORK_SAVE_INTERVAL << " iteration";
+  if (NETWORK_SAVE_INTERVAL != 1)
+    std::cout << "s";
+  std::cout << std::endl;
 }
 
 int main(int num_args, char **args) {
@@ -266,5 +269,5 @@ int main(int num_args, char **args) {
   updateTrainingParameters();
   std::cout << std::endl;
 
-  return train_network();
+  return run_game();
 }

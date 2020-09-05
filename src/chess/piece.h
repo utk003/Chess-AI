@@ -153,7 +153,7 @@ class Bishop : public Piece {
 };
 
 // The Pawn class: See piece.fwd.h && piece::Piece class
-// This class also contains: The method moved2x(), which is used internally for en passante requirements
+// This class also contains: The method moved2x(), which is used internally for en passant requirements
 // This class has the friend PieceManager class, through which its moved2x flag can be updated
 class Pawn : public Piece {
     friend class PieceManager;

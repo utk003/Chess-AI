@@ -69,7 +69,7 @@ class Board : piece::PieceManager {
     void getPossibleMoves(std::vector<game::Move> *white, std::vector<game::Move> *black);
 
     bool doMove(Move *move, Game *game); // See game::Move::doMove()
-    void undoMove(Game *game);
+    void undoMove(Game *game, int depth = 1);
 
     [[nodiscard]] Move *getLastMove() const;
 

@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "../chess/game.h"
 #include "../util/string_util.h"
 
 std::map<GLFWwindow *, graphics::OpenGL *> graphics::OpenGL::_opengl_map;
@@ -42,24 +41,24 @@ graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
   asset_file_path = ASSET_2D_DIRECTORY;
 
   _white = game->white_player();
-  if (_white != nullptr) {
-    if (_white->type().isHumanPlayer())
-      _human_white = (player::HumanPlayer *) _white;
-  } else
-    debug_assert();
+  if (_white != nullptr)
+    _human_white = _white->type().isHumanPlayer() ? (player::HumanPlayer *) _white: nullptr;
+  else debug_assert();
 
   _black = game->black_player();
-  if (_black != nullptr) {
-    if (_black->type().isHumanPlayer())
-      _human_black = (player::HumanPlayer *) _black;
-  } else
-    debug_assert();
+  if (_black != nullptr)
+    _human_black = _black->type().isHumanPlayer() ? (player::HumanPlayer *) _black: nullptr;
+  else debug_assert();
 
   _game_name = game_name;
   _window_title = _game_name + ": " + _white->type().toString() + " vs " + _black->type().toString();
 
   _file_save_counter = 0;
   _show_expanded_ui = false;
+
+  int board_size = _board->length() * _board->width();
+  for (int i = 0; i < board_size; ++i)
+    _overlays.emplace_back(4, false);
 }
 
 graphics::OpenGL::~OpenGL() {
@@ -78,12 +77,12 @@ GLuint graphics::OpenGL::getCoordBuffer(int rInt, int cInt) {
   float c = (float) cInt - 4.0f;
 
   GLfloat g_vertex_buffer_data[] = {
-    2.0f * c,           2.0f * r,           0.0f,
-    2.0f * c,           2.0f * (r + 1.0f),  0.0f,
-    2.0f * (c + 1.0f),  2.0f * (r + 1.0f),  0.0f,
-    2.0f * c,           2.0f * r,           0.0f,
-    2.0f * (c + 1.0f),  2.0f * (r + 1.0f),  0.0f,
-    2.0f * (c + 1.0f),  2.0f * r,           0.0f,
+    2.0f * c, 2.0f * r, 0.0f,
+    2.0f * c, 2.0f * (r + 1.0f), 0.0f,
+    2.0f * (c + 1.0f), 2.0f * (r + 1.0f), 0.0f,
+    2.0f * c, 2.0f * r, 0.0f,
+    2.0f * (c + 1.0f), 2.0f * (r + 1.0f), 0.0f,
+    2.0f * (c + 1.0f), 2.0f * r, 0.0f,
   };
 
   GLuint vertexbuffer;
@@ -126,8 +125,7 @@ void graphics::OpenGL::loadTexture(const std::string &fileName, std::map<std::st
     glGenerateMipmap(GL_TEXTURE_2D);
 
     text_map[fileName] = textureID;
-  } else
-    debug_assert();
+  } else debug_assert();
 
   stbi_image_free(buf);
 }
@@ -149,10 +147,14 @@ void graphics::OpenGL::loadTextures() {
   }
 
   std::string boardUI[4] = {"selected", "previous_move", "normal_move", "attacking_move"};
-  for (const std::string &name: boardUI) {
-    str = string::combine({asset_file_path, "overlay/", name, ".png"});
-    loadTexture(str, _texture_map);
-  }
+  for (const std::string &name: boardUI)
+    for (int j = 1; j <= 4; ++j)
+      for (int i = 1; i <= j; ++i) {
+        str = string::combine(
+          {asset_file_path, "overlay/", name, "/", std::to_string(i), "-", std::to_string(j), ".png"}
+        );
+        loadTexture(str, _texture_map);
+      }
 }
 
 void graphics::OpenGL::mouseClicked(GLFWwindow *window, int button, int action, int mods) {
@@ -191,17 +193,19 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode
         promotionHelper(piece::PieceType::BISHOP);
         break;
 
-      case GLFW_KEY_Z:
-        _game->board()->undoMove(_game);
+      case GLFW_KEY_Z: {
+        int countHumans = (_human_white != nullptr) + (_human_black != nullptr);
+        if (countHumans > 0)
+          _game->board()->undoMove(_game, 3 - countHumans);
         break;
+      }
 
       case GLFW_KEY_S:
         _board->saveToFile("save " + std::to_string(_file_save_counter++));
         break;
 
       case GLFW_KEY_TAB:
-        // TODO Work on multi-threaded interactions <--> expanded ui features
-        // _show_expanded_ui = !_show_expanded_ui;
+        _show_expanded_ui = !_show_expanded_ui;
         break;
 
       default:
@@ -219,7 +223,7 @@ void graphics::OpenGL::initialize() {
 
   // Initialize GLFW
   if (!glfwInit()) {
-    fprintf(stderr, "Failed to initialize GLFW\n");
+    std::cerr << "Failed to initialize GLFW" << std::endl;
     debug_assert();
     return;
   }
@@ -233,8 +237,7 @@ void graphics::OpenGL::initialize() {
   // Open a window and create its OpenGL context
   _window = glfwCreateWindow(1024, 1024, _window_title.c_str(), nullptr, nullptr);
   if (_window == nullptr) {
-    fprintf(stderr,
-            "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
+    std::cerr << "Failed to open GLFW window. Note: Intel GPUs are not OpenGL 3.3 compatible." << std::endl;
     glfwTerminate();
     debug_assert();
     return;
@@ -244,7 +247,7 @@ void graphics::OpenGL::initialize() {
   // Initialize GLEW
   glewExperimental = true; // Needed for core profile
   if (glewInit() != GLEW_OK) {
-    fprintf(stderr, "Failed to initialize GLEW\n");
+    std::cerr << "Failed to initialize GLEW" << std::endl;
     glfwTerminate();
     debug_assert();
     return;
@@ -308,6 +311,50 @@ void graphics::OpenGL::checkBoardUpdate() {
   _temp_board = nullptr;
 }
 
+void graphics::OpenGL::renderOverlays(GLuint textbuff) {
+  // selected square overlay + attacked squares overlays
+  int x = _game->selected_x(), y = _game->selected_y();
+  if (x != -1 && y != -1) {
+    _overlays[locMap(_board, x, y)][0] = true;
+
+    // attack squares if extra ui enabled
+    if (_show_expanded_ui) {
+      auto *moves = new std::vector<game::Move>();
+      _board->getMovesFromSquare(x, y, moves);
+      for (const game::Move &move: *moves)
+        _overlays[locMap(_board, move.endingRow(), move.endingColumn())][2 + move.isAttack(_board)] = true;
+      delete moves;
+    }
+  }
+
+  // previous move overlay
+  game::Move *pastMove = _board->getLastMove();
+  if (pastMove != nullptr) {
+    _overlays[locMap(_board, pastMove->startingRow(), pastMove->startingColumn())][1] = true;
+    _overlays[locMap(_board, pastMove->endingRow(), pastMove->endingColumn())][1] = true;
+  }
+  delete pastMove;
+
+  std::string total, filePath;
+  std::string textures[4] = {"selected", "previous_move", "normal_move", "attacking_move"};
+  for (int r = 0; r < _board->length(); ++r)
+    for (int c = 0; c < _board->width(); ++c) {
+      int index = locMap(_board, r, c);
+      total = std::to_string(_overlays[index][0] + _overlays[index][1] + _overlays[index][2] + _overlays[index][3]);
+      int count = 0;
+      for (int i = 0; i < 4; ++i) {
+        if (!_overlays[index][i])
+          continue;
+        _overlays[index][i] = false;
+
+        filePath = string::combine(
+          {asset_file_path, "overlay/", textures[i], "/", std::to_string(++count), "-", total, ".png"}
+        );
+        renderSquare(r, c, textbuff, filePath);
+      }
+    }
+}
+
 void graphics::OpenGL::run() {
   int r, c, len = _board->length(), wid = _board->width();
   do {
@@ -321,6 +368,11 @@ void graphics::OpenGL::run() {
         _window_title = _game_name + ": White won";
       else if (result.isStalemate())
         _window_title = _game_name + ": Stalemate";
+    }
+    else {
+      if (!_game->getResult().isGameUndecided())
+        debug_assert();
+      _window_title = _game_name + ": " + _white->type().toString() + " vs " + _black->type().toString();
     }
     // Update Window Title
     glfwSetWindowTitle(_window, _window_title.c_str());
@@ -357,35 +409,7 @@ void graphics::OpenGL::run() {
 
         renderSquare(r, c, textbuff, filePath);
       }
-    // selected square overlay + attacked squares overlays
-    int x = _game->selected_x(), y = _game->selected_y();
-    if (x != -1 && y != -1) {
-      filePath = asset_file_path + "overlay/selected.png";
-      renderSquare(x, y, textbuff, filePath);
-
-      // attack squares if extra ui enabled
-      if (_show_expanded_ui) {
-        auto *moves = new std::vector<game::Move>();
-        _game->board()->getMovesFromSquare(x, y, moves);
-        for (const game::Move &move: *moves) {
-          if (move.isAttack(_game->board()))
-            filePath = asset_file_path + "overlay/attacking_move.png";
-          else
-            filePath = asset_file_path + "overlay/normal_move.png";
-
-          renderSquare(move.endingRow(), move.endingColumn(), textbuff, filePath);
-        }
-        delete moves;
-      }
-    }
-    // previous move overlay
-    game::Move *pastMove = _game->board()->getLastMove();
-    if (pastMove != nullptr) {
-      filePath = asset_file_path + "overlay/previous_move.png";
-      renderSquare(pastMove->startingRow(), pastMove->startingColumn(), textbuff, filePath);
-      renderSquare(pastMove->endingRow(), pastMove->endingColumn(), textbuff, filePath);
-    }
-    delete pastMove;
+    renderOverlays(textbuff);
 
     // Clean up VBOs
     glDeleteBuffers(1, &textbuff);
