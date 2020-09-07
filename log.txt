@@ -1,5 +1,5 @@
-July 3, 2020
-------------
+Commit 1: July 3, 2020
+----------------------
 This is my first push, mainly because I just never got around to doing it before.
 
 The entire chess game is pretty much done. There are a few changes I will be making, but nothing major.
@@ -10,8 +10,8 @@ Overall, the project is moving along well, but this memory leak is pretty major,
 
 
 
-July 6, 2020
-------------
+Commit 2: July 6, 2020
+----------------------
 This is my second push. Since the last one, quite a lot has happened.
 
 Most importantly, I found all of the memory leaks in the program. In total, there were quite a few (6 or 7 different leaks to be more precise). A couple stemmed from a misunderstanding on my end about how the C++ standard library containers clear memory when emptied. Another resulted from a misunderstanding on my end about how arrays work in C++. I ended up resolving this issue by just replacing all of the pointer arrays with vectors, which works much better anyways. I also had a few leaks caused by sloppy code when I was writing a patch for another issue. Those took a while to find, but I eventually fixed those as well.
@@ -26,8 +26,8 @@ Overall, I have made some decent progress in the past few days. A little bit mor
 
 
 
-July 27, 2020
--------------
+Commit 3: July 27, 2020
+-----------------------
 Since the last push, I have had some major progress.
 
 A) The network is set up as a basic MLP with Gradient Descent/Backprop training. Eventually, I would like to set up NEAT, Q-Learning, or even CNNs for more effective training. However, the network *can* train now.
@@ -40,8 +40,8 @@ Now it's time to train!!
 
 
 
-July 31, 2020
--------------
+Commit 4: July 31, 2020
+-----------------------
 No, it wasn't quite time to train yet.
 
 Changes:
@@ -55,14 +55,14 @@ I've already had some minor success training the network. However, it's slow goi
 
 
 
-August 3, 2020
---------------
+Commit 5: August 3, 2020
+------------------------
 Minor changes to code/readme
 
 
 
-August 6, 2020
---------------
+Commit 6: August 6, 2020
+------------------------
 Now training should work??!?!!??!?!
 
 Changes:
@@ -75,27 +75,27 @@ Now this should be able to train
 
 
 
-August 10, 2020
----------------
+Commit 7: August 10, 2020
+-------------------------
 Update to CMakeLists.txt to work better out of the box
   - Now all dependencies can be installed (ie with homebrew) and then CMake will automatically find the files to link with using pkg-config
 
 
 
-August 15, 2020
----------------
+Commit 8: August 15, 2020
+-------------------------
 Debugging update
 
 
 
-August 16, 2020
----------------
+Commit 9: August 16, 2020
+-------------------------
 Debugging update
 
 
 
-August 23, 2020
----------------
+Commit 10: August 23, 2020
+--------------------------
 Upgrade to training -> More aggressive training reps, more aggressive mcts, stored training cases, sharper targets, etc.
 Updated debugging tools -> Stack trace
 Better usability -> Tries to automatically detect correct working directory + can be given absolute path as argument
@@ -103,31 +103,44 @@ General code cleanup
 
 
 
-August 27, 2020
----------------
+Commit 11: August 27, 2020
+--------------------------
 Fixed board/double output print
 Better usability -> easier to configure parameters for MCTS, training, etc.
 
 
 
-August 28, 2020
----------------
+Commit 12: August 28, 2020
+--------------------------
 Fixed bug where game could not run without graphics
 Made initial paramter configuration easier
 
 
 
-September 4, 2020
------------------
+Commit 13: September 4, 2020
+----------------------------
 Upgraded graphics -> less glitchy, support for multiple overlays on a single cell
 Extra debugging asserts and changes to try to track down MCTS training crashes
 
 
 
-September 7, 2020
------------------
+Commit 14: September 7, 2020
+----------------------------
 Extra debugging asserts and changes to try to track down MCTS training crashes
 Improved MCTS logic
 Better training strategies
 Cleaned up player code
 Reinstated 50 move stalemate (raised to 250) to prevent infinite loop in drawn gamestates
+
+
+
+Commit 14.1: September 7, 2020
+------------------------------
+More debugging information for MCTS crash
+
+
+
+Commit 14.2: September 7, 2020
+------------------------------
+MCTS crash finally resolved (I think)
+- Caused by incorrect state resolution on a singular edge case where a 2x jump pawn is captured

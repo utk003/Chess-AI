@@ -2,6 +2,7 @@
 #include <chrono>
 #include <ctime>
 #include <utility>
+#include <sstream>
 
 #include "chess/piece.fwd.h"
 #include "chess/game.h"
@@ -12,14 +13,16 @@
 #include "util/math_util.h"
 #include "util/string_util.h"
 
-int run_game(const std::string &s = "assets/game_states/chess_default_start.txt") {
+int run_game(const std::string &s = "assets/game_states/chess_default_start.txt",
+             player::PlayerType white = player::PlayerType::HUMAN,
+             player::PlayerType black = player::PlayerType::HUMAN) {
   network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
 
   auto *game = new game::Game(new game::Board(8, 8));
   game->board()->loadFromFile(s);
 
-  game->setPlayer(piece::PieceColor::WHITE, player::PlayerType::AI);
-  game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::MCTS);
+  game->setPlayer(piece::PieceColor::WHITE, white);
+  game->setPlayer(piece::PieceColor::BLACK, black);
 
   // start graphics engine
   graphics::OpenGL *openGL = graphics::OpenGL::get_instance(game, "Chess");
@@ -141,8 +144,12 @@ int train_network() {
 }
 
 int test() {
-  double d = 723498234.412342;
-  std::cout << string::from_double(d) << std::endl;
+  game::Move move = game::Move(-1, -1, -1, -1, piece::PieceType::NONE);
+  std::cout << move.toString() << std::endl;
+  piece::PieceType t = piece::PieceType::NONE;
+  std::ostringstream ss;
+  ss << t;
+  std::cout << ss.str() << std::endl;
   return 0;
 }
 
@@ -246,13 +253,13 @@ void updateTrainingParameters() {
   std::cout << (LOAD_PREV_NETWORK ? "Loading previous network (from \"network-dump/latest.txt\")"
                                   : "Generating new random network") << std::endl;
 
-  NUM_TRAINING_ITERATIONS = 1;
+  NUM_TRAINING_ITERATIONS = 100;
   std::cout << "Number of Training Iterations: " << NUM_TRAINING_ITERATIONS << " iteration";
   if (NUM_TRAINING_ITERATIONS != 1)
     std::cout << "s";
   std::cout << std::endl;
 
-  NETWORK_SAVE_INTERVAL = 20;
+  NETWORK_SAVE_INTERVAL = 1;
   std::cout << "Network Save Interval: " << NETWORK_SAVE_INTERVAL << " iteration";
   if (NETWORK_SAVE_INTERVAL != 1)
     std::cout << "s";

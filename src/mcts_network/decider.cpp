@@ -20,7 +20,7 @@ std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(gam
       board->doMove(new game::Move(moves[i]), game);
       actionMap[moves[i]] = color_multiplier * predictPosition(board);
       board->undoMove(game);
-    } else {
+    } else { // TODO delete debug prints
       std::cout << "Error on Move #" << i << std::endl;
       for (int j = 0; j < moves.size(); ++j)
         std::cout << j << " " << moves[j].toString() << std::endl;

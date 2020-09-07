@@ -90,7 +90,8 @@ class PieceColor {
           output << "none";
           break;
 
-        default: fatal_assert();
+        default:
+          fatal_assert();
       }
       return output;
     }
@@ -104,7 +105,8 @@ class PieceColor {
         case NONE:
           return 0;
 
-        default: fatal_assert();
+        default:
+          fatal_assert();
       }
     }
 
@@ -201,7 +203,8 @@ class PieceType {
           output << "none";
           break;
 
-        default: fatal_assert();
+        default:
+          fatal_assert();
       }
       return output;
     }
@@ -227,7 +230,8 @@ class PieceType {
         case NONE:
           return 0;
 
-        default: fatal_assert();
+        default:
+          fatal_assert();
       }
     }
 
@@ -255,7 +259,8 @@ class PieceType {
         case NONE:
           return 0;
 
-        default: fatal_assert();
+        default:
+          fatal_assert();
       }
     }
 
@@ -278,7 +283,8 @@ class PieceType {
         case NONE:
           return 0;
 
-        default: fatal_assert();
+        default:
+          fatal_assert();
       }
     }
 

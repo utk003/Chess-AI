@@ -199,7 +199,7 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       std::pair<game::Move, Node *> optimal = select_optimal_move(node);
       node = optimal.second;
       bool success = clone->tryMove(optimal.first);
-      if (!success) {
+      if (!success) { // TODO delete debug prints
         game->board()->saveToFile("mcts_start");
         clone->board()->saveToFile("mcts_crash");
         std::cout << optimal.first.toString() << std::endl;

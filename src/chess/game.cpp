@@ -423,12 +423,8 @@ game::Move &game::Move::operator=(const Move &m) {
 
   _pawn_promotion_type = m._pawn_promotion_type;
 
-  piece::Piece *piece;
-  for (auto &_other_replaced_piece : _other_replaced_pieces) {
-    piece = _other_replaced_pieces[_other_replaced_piece.first];
-    _other_replaced_pieces[_other_replaced_piece.first] = nullptr;
-    delete piece;
-  }
+  for (auto &it : _other_replaced_pieces)
+    delete it.second;
   _other_replaced_pieces.clear();
 
   _piece_setting_changes.clear();
@@ -478,7 +474,10 @@ void game::Move::addReplacedPiece(int r, int c, piece::Piece *p) {
 }
 
 void game::Move::addSettingChange(int r, int c, bool oldSetting) {
-  _piece_setting_changes[std::pair<int, int>(r, c)] = oldSetting;
+  std::pair<int, int> coords = {r, c};
+  if (!_piece_setting_changes.count(coords))
+    _piece_setting_changes[coords] = false;
+  _piece_setting_changes[coords] |= oldSetting;
 }
 
 bool game::Move::doMove(Board *board) {
@@ -489,11 +488,10 @@ bool game::Move::doMove(Board *board) {
   for (r = 0; r < 8; ++r)
     for (c = 0; c < 8; ++c) {
       p = pieces[locMap(board, r, c)];
-      if (p->type().isPawn())
-        if (((piece::Pawn *) p)->moved2x()) {
-          addSettingChange(r, c, true);
-          update_flag((piece::Pawn *) p, false);
-        }
+      if (p->type().isPawn() && ((piece::Pawn *) p)->moved2x()) {
+        addSettingChange(r, c, true);
+        update_flag((piece::Pawn *) p, false);
+      }
     }
 
   int r1 = _start_row, c1 = _start_col, r2 = _end_row, c2 = _end_col;
@@ -643,34 +641,27 @@ void game::Move::undoMove(Board *board) const {
   int r1 = _start_row, c1 = _start_col, r2 = _end_row, c2 = _end_col;
 
   int i1 = locMap(board, r1, c1), i2 = locMap(board, r2, c2);
-  piece::Piece *oldPos = pieces[i1];
+  delete pieces[i1]; // Delete old replacement piece!!!
   pieces[i1] = pieces[i2]; // Move back main piece
-  pieces[i2] = nullptr; // Get rid of copy of moved piece so we don't nuke the program (end up segfaulting)
-  delete oldPos; // Delete old replacement piece!!!
+  pieces[i2] = nullptr; // Get rid of copy of moved piece so we don't segfault when putting back pieces (below)
 
   // Put back all other pieces
-  piece::Piece *copy;
   int index;
-  for (auto &_other_replaced_piece : _other_replaced_pieces) {
-    std::pair<int, int> coords = _other_replaced_piece.first;
-    index = locMap(board, coords.first, coords.second);
-
-    copy = pieces[index];
-    pieces[index] = _other_replaced_piece.second->clone();
-    delete copy; // free memory to avoid memory leaks
+  for (auto &it : _other_replaced_pieces) {
+    index = locMap(board, it.first.first, it.first.second);
+    delete pieces[index]; // free memory to avoid memory leaks
+    pieces[index] = it.second->clone();
   }
 
   // Fix move states
-  for (auto &_piece_setting_change : _piece_setting_changes) {
-    std::pair<int, int> coords = _piece_setting_change.first;
-    updateSetting(board, coords.first, coords.second, _piece_setting_change.second);
-  }
+  for (auto &it : _piece_setting_changes)
+    updateSetting(board, it.first.first, it.first.second, it.second);
 }
 
 std::string game::Move::toString() const {
-  std::stringstream ss;
-  ss << "(" << _start_row << ", " << _start_col << ") to (" << _end_row << ", " << _end_col << ") -> "
-     << _pawn_promotion_type;
+  piece::PieceType t = _pawn_promotion_type;
+  std::ostringstream ss;
+  ss << "(" << _start_row << ", " << _start_col << ") to (" << _end_row << ", " << _end_col << ") -> " << t;
   return ss.str();
 }
 
