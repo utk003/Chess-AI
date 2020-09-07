@@ -18,8 +18,8 @@ int run_game(const std::string &s = "assets/game_states/chess_default_start.txt"
   auto *game = new game::Game(new game::Board(8, 8));
   game->board()->loadFromFile(s);
 
-  game->setPlayer(piece::PieceColor::WHITE, player::PlayerType::HUMAN);
-  game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::HUMAN);
+  game->setPlayer(piece::PieceColor::WHITE, player::PlayerType::AI);
+  game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::MCTS);
 
   // start graphics engine
   graphics::OpenGL *openGL = graphics::OpenGL::get_instance(game, "Chess");
@@ -49,7 +49,7 @@ game::GameResult create_game_training_case() {
   game->board()->loadFromFile("assets/game_states/chess_default_start.txt");
 
   game->setPlayer(piece::PieceColor::WHITE, player::PlayerType::AI);
-  game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::AI);
+  game->setPlayer(piece::PieceColor::BLACK, player::PlayerType::MCTS);
 
   game->startGame();
   thread::wait_for([&] { return game->isOver(); });
@@ -269,5 +269,5 @@ int main(int num_args, char **args) {
   updateTrainingParameters();
   std::cout << std::endl;
 
-  return run_game();
+  return train_network();
 }

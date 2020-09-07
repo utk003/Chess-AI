@@ -76,14 +76,13 @@ class MCTS {
 
     static std::pair<game::Move, Node *> run_mcts(game::Game *game, decider::Decider *move_ranker);
 
-    static int game_move_count;
-
     static int SIMULATION_SEARCH_DEPTH;
     static int NUM_SIMULATIONS_PER_THREAD;
     static int DEFAULT_NUM_THREADS;
 
   private:
-    static void mcts(game::Game *game, decider::Decider *move_ranker, Node *root, std::atomic_int &count);
+    static void mcts(game::Game *game, decider::Decider *move_ranker, Node *root,
+                     std::atomic_int &search_iteration_count, std::atomic_int &thread_finished_count);
 
     static double expand_node(Node *node, game::Game *game, decider::Decider *move_ranker);
     static std::pair<game::Move, Node *> select_optimal_move(Node *parent);

@@ -430,9 +430,7 @@ player::MonteCarloPlayer::~MonteCarloPlayer() {
 }
 
 void player::MonteCarloPlayer::findAndPlayMove() {
-  tree::MCTS::game_move_count = _move_count_at_start;
   std::pair<game::Move, tree::Node *> move_node_pair = tree::MCTS::run_mcts_multithreaded(_game, _move_ranker);
-  tree::MCTS::game_move_count = -1;
 
   playMove(move_node_pair.first);
   delete move_node_pair.second; // free memory to prevent memory leaks
@@ -448,9 +446,7 @@ player::NetworkAIPlayer::~NetworkAIPlayer() {
 }
 
 void player::NetworkAIPlayer::findAndPlayMove() {
-  tree::MCTS::game_move_count = _move_count_at_start;
   std::pair<game::Move, tree::Node *> move_node_pair = tree::MCTS::run_mcts_multithreaded(_game, _move_ranker);
-  tree::MCTS::game_move_count = -1;
 
   playMove(move_node_pair.first);
   network::NetworkStorage::saveBoard(_game->board(), move_node_pair.second);

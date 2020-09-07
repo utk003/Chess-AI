@@ -825,20 +825,20 @@ bool game::Game::tryMove(const Move &move) {
     return false;
 
   // do move
-  /* bool isCapture = */ _board->doMove(new Move(move), this);
+  bool isCapture = _board->doMove(new Move(move), this);
 
-  // TODO -> replace 50 move no-capture stalemate mechanic
-//  // check for 50 move no-capture stalemate
-//  if (!isCapture)
-//    _moves_since_last_capture++;
-//  else
-//    _moves_since_last_capture = 0;
-//
-//  if (_moves_since_last_capture >= 50) { // 50 non-capture moves = Stalemate
-//    _over = true;
-//    _result = game::GameResult::STALEMATE;
-//  } else
-  updateGameState();
+  // TODO -> replace 50 move no-capture stalemate mechanic (change from 250 back to 50)
+  // check for 50 move no-capture stalemate
+  if (!isCapture)
+    _moves_since_last_capture++;
+  else
+    _moves_since_last_capture = 0;
+
+  if (_moves_since_last_capture >= 250) { // 50 non-capture moves = Stalemate
+    _over = true;
+    _result = game::GameResult::STALEMATE;
+  } else
+    updateGameState();
 
   // move complete
   _is_move_complete = true;

@@ -95,8 +95,7 @@ std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::fun
     }
   }
 
-  if (optimal.second == nullptr)
-    debug_assert();
+  if (optimal.second == nullptr) debug_assert();
   return optimal;
 }
 
@@ -123,7 +122,6 @@ tree::Node *tree::Node::combineNodes(const std::vector<Node *> &nodes, int num_n
 }
 
 // Monte Carlo Tree Search class
-int tree::MCTS::game_move_count = -1;
 int tree::MCTS::SIMULATION_SEARCH_DEPTH = 8;
 int tree::MCTS::NUM_SIMULATIONS_PER_THREAD = 125;
 int tree::MCTS::DEFAULT_NUM_THREADS = 4;
@@ -154,7 +152,9 @@ tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::D
     num_threads = roots.size();
   }
 
-  std::atomic_int counter{NUM_SIMULATIONS_PER_THREAD * num_threads};
+  std::atomic_int iteration_counter{NUM_SIMULATIONS_PER_THREAD * num_threads};
+  std::atomic_int thread_counter{0};
+
   std::vector<game::Game *> clones(num_threads);
   for (int i = 0; i < num_threads; ++i) {
     clones[i] = game->clone();
@@ -162,17 +162,10 @@ tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::D
     expand_node(roots[i], clones[i], move_ranker);
     add_dirichlet_noise(roots[i]);
 
-    thread::create(mcts, clones[i], move_ranker, roots[i], std::ref(counter));
+    thread::create(mcts, clones[i], move_ranker, roots[i], std::ref(iteration_counter), std::ref(thread_counter));
   }
 
-  bool terminated_early = false;
-  thread::do_while_waiting_for([&] {
-    if (game_move_count != game->board()->move_count()) {
-      terminated_early = true;
-      game_move_count = -1;
-      counter.store(0);
-    }
-  }, [&] { return terminated_early || counter <= -num_threads; });
+  thread::wait_for([&] { return thread_counter >= num_threads; });
 
   for (auto &clone: clones)
     delete clone;
@@ -186,12 +179,13 @@ std::pair<game::Move, tree::Node *> tree::MCTS::run_mcts(game::Game *game, decid
   return run_mcts_multithreaded(game, 1, move_ranker);
 }
 
-void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *root, std::atomic_int &count) {
+void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *root,
+                      std::atomic_int &search_iteration_count, std::atomic_int &thread_finished_count) {
   Node *node;
   game::Game *clone;
   std::vector<Node *> searchPath;
 
-  while (count-- > 0) {
+  while (search_iteration_count-- > 0) {
     node = root;
     clone = game->clone();
     searchPath = {root};
@@ -206,12 +200,13 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       node = optimal.second;
       bool success = clone->tryMove(optimal.first);
       if (!success) {
-        clone->board()->saveToFile("mcts crash board layout");
+        game->board()->saveToFile("mcts_start");
+        clone->board()->saveToFile("mcts_crash");
         std::cout << optimal.first.toString() << std::endl;
         debug_assert();
 
         delete clone;
-        return;
+        goto TERMINATE_LOOP; // jump to end of mcts
       }
 
       searchPath.push_back(node);
@@ -245,6 +240,9 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
 
     delete clone;
   }
+
+  TERMINATE_LOOP:
+  thread_finished_count++;
 }
 
 void tree::MCTS::propagate_result(std::vector<Node *> &searchPath, double value, piece::PieceColor color) {

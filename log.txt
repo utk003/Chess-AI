@@ -121,3 +121,13 @@ September 4, 2020
 -----------------
 Upgraded graphics -> less glitchy, support for multiple overlays on a single cell
 Extra debugging asserts and changes to try to track down MCTS training crashes
+
+
+
+September 7, 2020
+-----------------
+Extra debugging asserts and changes to try to track down MCTS training crashes
+Improved MCTS logic
+Better training strategies
+Cleaned up player code
+Reinstated 50 move stalemate (raised to 250) to prevent infinite loop in drawn gamestates
