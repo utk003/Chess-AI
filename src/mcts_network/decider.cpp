@@ -1,6 +1,7 @@
 #include "decider.h"
 
 #include "../chess/game.h"
+#include <iostream>
 
 // Decider class
 std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(game::Game *game) {
@@ -14,13 +15,19 @@ std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(gam
   std::map<game::Move, double> actionMap;
   std::vector<game::Move> moves = game->possibleMoves(current_color);
 
-  int i;
-  for (i = 0; i < moves.size(); ++i) {
+  for (int i = 0; i < moves.size(); ++i) {
     if (moves[i].verify(board)) {
       board->doMove(new game::Move(moves[i]), game);
       actionMap[moves[i]] = color_multiplier * predictPosition(board);
       board->undoMove(game);
-    } else debug_assert();
+    } else {
+      std::cout << "Error on Move #" << i << std::endl;
+      for (int j = 0; j < moves.size(); ++j)
+        std::cout << j << " " << moves[j].toString() << std::endl;
+      game->board()->saveToFile("decider_original");
+      board->saveToFile("decider_corrupted");
+      debug_assert();
+    }
   }
 
   delete board; // TODO paired with todo above ^^^ -> remove iff clone() is removed from above
