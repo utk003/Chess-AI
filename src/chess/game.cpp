@@ -250,7 +250,7 @@ bool game::Board::doMove(Move *move, Game *game) {
 
   if (game != nullptr) {
     game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
-    game->updateGraphicsBoard(clone());
+    game->updateGraphicsBoard(this);
   }
 
   return isCaptureMove;
@@ -271,7 +271,7 @@ void game::Board::undoMove(Game *game, const int depth) {
   if (depth == 1) {
     if (game != nullptr) {
       game->_current_player_color = _move_count % 2 == 0 ? piece::PieceColor::WHITE: piece::PieceColor::BLACK;
-      game->updateGraphicsBoard(clone());
+      game->updateGraphicsBoard(this);
       game->resetSelection();
       game->updateGameState();
     }
@@ -722,9 +722,9 @@ void game::Game::setGraphics(graphics::OpenGL *graphics) {
   _graphics = graphics;
 }
 
-void game::Game::updateGraphicsBoard(Board *new_board) {
+void game::Game::updateGraphicsBoard(Board *board) {
   if (_graphics != nullptr)
-    _graphics->updateGraphics(new_board);
+    _graphics->updateGraphics(board);
 }
 
 void game::Game::startGame() {

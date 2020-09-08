@@ -292,14 +292,14 @@ void graphics::OpenGL::initialize() {
   _texture_samplerID = glGetUniformLocation(_shader_programID, "texture_sampler");
 }
 
-void graphics::OpenGL::updateGraphics(game::Board *new_board) {
-  if (new_board == nullptr) {
+void graphics::OpenGL::updateGraphics(game::Board *board) {
+  if (board == nullptr) {
     debug_assert();
     return;
   }
 
   delete _temp_board;
-  _temp_board = new_board;
+  _temp_board = board->clone();
 }
 
 void graphics::OpenGL::checkBoardUpdate() {

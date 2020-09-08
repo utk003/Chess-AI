@@ -214,7 +214,7 @@ class Game : BoardController, piece::PieceManager {
     void setPlayer(piece::PieceColor color, player::PlayerType type);
     void setGraphics(graphics::OpenGL *graphics);
 
-    void updateGraphicsBoard(Board *new_board);
+    void updateGraphicsBoard(Board *board);
 
     void startGame();
     void endGame();

@@ -30,12 +30,8 @@ tree::Node::Node(double prior, piece::PieceColor col) {
 }
 
 tree::Node::~Node() {
-  Node *node;
-  for (auto &it : _children) {
-    node = _children[it.first];
-    _children[it.first] = nullptr;
-    delete node;
-  }
+  for (auto &it : _children)
+    delete it.second;
   _children.clear();
 }
 
@@ -200,9 +196,9 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       node = optimal.second;
       bool success = clone->tryMove(optimal.first);
       if (!success) { // TODO delete debug prints
-        game->board()->saveToFile("mcts_start");
-        clone->board()->saveToFile("mcts_crash");
-        std::cout << optimal.first.toString() << std::endl;
+//        game->board()->saveToFile("mcts_start");
+//        clone->board()->saveToFile("mcts_crash");
+//        std::cout << optimal.first.toString() << std::endl;
         debug_assert();
 
         delete clone;

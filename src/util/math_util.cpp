@@ -19,9 +19,9 @@ void print(const std::string &s) {
 double run_randomizer() {
   static auto time_on_start = std::chrono::system_clock::now();
   static time_t time = std::chrono::system_clock::to_time_t(time_on_start);
-  static std::string string_time = "Mon Sep  7 13:07:12 2020\n";//(ctime(&time)); // TODO revert to random after testing
+  static std::string string_time(ctime(&time));
 
-  print(string_time);
+  print(string_time); // TODO remove eventually
 
   static std::seed_seq seed(string_time.begin(), string_time.end());
   static std::mt19937 randomizer_32bit{seed};

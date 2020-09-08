@@ -2,7 +2,6 @@
 #include <chrono>
 #include <ctime>
 #include <utility>
-#include <sstream>
 
 #include "chess/piece.fwd.h"
 #include "chess/game.h"
@@ -13,10 +12,18 @@
 #include "util/math_util.h"
 #include "util/string_util.h"
 
-int run_game(const std::string &s = "assets/game_states/chess_default_start.txt",
-             player::PlayerType white = player::PlayerType::HUMAN,
-             player::PlayerType black = player::PlayerType::HUMAN) {
-  network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
+bool LOAD_PREV_NETWORK = false;
+int NUM_TRAINING_ITERATIONS = 1;
+int NETWORK_SAVE_INTERVAL = 20;
+
+int run_game(player::PlayerType white = player::PlayerType::HUMAN,
+             player::PlayerType black = player::PlayerType::HUMAN,
+             const std::string &s = "assets/game_states/chess_default_start.txt") {
+
+  if (LOAD_PREV_NETWORK)
+    network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
+  else
+    network::NetworkStorage::initialize();
 
   auto *game = new game::Game(new game::Board(8, 8));
   game->board()->loadFromFile(s);
@@ -44,8 +51,6 @@ int run_game(const std::string &s = "assets/game_states/chess_default_start.txt"
 
   return 0;
 }
-
-int NETWORK_SAVE_INTERVAL = 20;
 
 game::GameResult create_game_training_case() {
   auto *game = new game::Game(new game::Board(8, 8));
@@ -116,8 +121,6 @@ run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_
   std::cout << "Completed Iteration #" << TRAINING_INDEX << ": " << ctime(&time1);
 }
 
-bool LOAD_PREV_NETWORK = false;
-int NUM_TRAINING_ITERATIONS = 1;
 int train_network() {
   network::NetworkStorage::SAVE_NETWORKS = true;
 
@@ -144,12 +147,17 @@ int train_network() {
 }
 
 int test() {
-  game::Move move = game::Move(-1, -1, -1, -1, piece::PieceType::NONE);
-  std::cout << move.toString() << std::endl;
-  piece::PieceType t = piece::PieceType::NONE;
-  std::ostringstream ss;
-  ss << t;
-  std::cout << ss.str() << std::endl;
+  auto *game = new game::Game(new game::Board(8, 8));
+  game->board()->loadFromFile("assets/game_states/chess_default_start.txt");
+
+  for (int i = 0; i < 10000; ++i)
+    delete game->clone();
+  std::cout << "Done generating" << std::endl;
+  thread::sleep_seconds(15);
+//  std::cout << "Done deleting" << std::endl;
+//  thread::sleep_seconds(15);
+  std::cout << "Over" << std::endl;
+
   return 0;
 }
 
@@ -276,5 +284,5 @@ int main(int num_args, char **args) {
   updateTrainingParameters();
   std::cout << std::endl;
 
-  return train_network();
+  return train_network();//run_game(player::PlayerType::HUMAN, player::PlayerType::AI);
 }

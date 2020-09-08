@@ -28,7 +28,7 @@ class OpenGL : game::BoardController {
 
     void run();
 
-    void updateGraphics(game::Board *new_board);
+    void updateGraphics(game::Board *board);
 
   private:
     static std::map<GLFWwindow *, OpenGL *> _opengl_map;

@@ -107,13 +107,14 @@ Commit 11: August 27, 2020
 --------------------------
 Fixed board/double output print
 Better usability -> easier to configure parameters for MCTS, training, etc.
+Improved graphics -> less glitchy
 
 
 
 Commit 12: August 28, 2020
 --------------------------
 Fixed bug where game could not run without graphics
-Made initial paramter configuration easier
+Made initial parameter configuration easier
 
 
 
@@ -144,3 +145,10 @@ Commit 14.2: September 7, 2020
 ------------------------------
 MCTS crash finally resolved (I think)
 - Caused by incorrect state resolution on a singular edge case where a 2x jump pawn is captured
+
+
+
+Commit 14.3: September 7, 2020
+------------------------------
+Fixed memory leak arising from graphics update (c11)
+- should prevent limitless memory usage explosion which was crippling training

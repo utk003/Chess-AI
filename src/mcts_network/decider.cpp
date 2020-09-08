@@ -5,7 +5,7 @@
 
 // Decider class
 std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(game::Game *game) {
-  game::Board *board = game->board()->clone(); // TODO see if needs clone() to protect against messed up undoMove()?
+  game::Board *board = game->board();
 
   piece::PieceColor current_color = game->getCurrentColor();
   int color_multiplier = current_color.colorCode();
@@ -15,22 +15,12 @@ std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(gam
   std::map<game::Move, double> actionMap;
   std::vector<game::Move> moves = game->possibleMoves(current_color);
 
-  for (int i = 0; i < moves.size(); ++i) {
-    if (moves[i].verify(board)) {
-      board->doMove(new game::Move(moves[i]), game);
-      actionMap[moves[i]] = color_multiplier * predictPosition(board);
+  for (auto &move : moves)
+    if (move.verify(board)) {
+      board->doMove(new game::Move(move), game);
+      actionMap[move] = color_multiplier * predictPosition(board);
       board->undoMove(game);
-    } else { // TODO delete debug prints
-      std::cout << "Error on Move #" << i << std::endl;
-      for (int j = 0; j < moves.size(); ++j)
-        std::cout << j << " " << moves[j].toString() << std::endl;
-      game->board()->saveToFile("decider_original");
-      board->saveToFile("decider_corrupted");
-      debug_assert();
-    }
-  }
-
-  delete board; // TODO paired with todo above ^^^ -> remove iff clone() is removed from above
+    } else debug_assert();
 
   return {currEval, actionMap};
 }
