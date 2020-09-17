@@ -33,7 +33,7 @@ class Piece {
     virtual bool verifyMove(const game::Move &move, game::Board *board);
 
     [[nodiscard]] virtual Piece *clone() const;
-    [[nodiscard]] virtual int code() const;
+    [[nodiscard]] virtual double code() const;
 
     friend std::istream &operator>>(std::istream &input, Piece *&p);
     friend std::ostream &operator<<(std::ostream &output, Piece *&p);
@@ -66,7 +66,7 @@ class King : public Piece {
     [[nodiscard]] inline bool moved() const { return _moved; }
 
     [[nodiscard]] Piece *clone() const override;
-    [[nodiscard]] int code() const override;
+    [[nodiscard]] double code() const override;
 
     friend std::ostream &operator<<(std::ostream &output, King *&k);
 
@@ -110,7 +110,7 @@ class Rook : public Piece {
     [[nodiscard]] inline bool moved() const { return _moved; }
 
     [[nodiscard]] Piece *clone() const override;
-    [[nodiscard]] int code() const override;
+    [[nodiscard]] double code() const override;
 
     friend std::ostream &operator<<(std::ostream &output, Rook *&r);
 
@@ -170,7 +170,7 @@ class Pawn : public Piece {
     [[nodiscard]] inline bool moved2x() const { return _moved2x; }
 
     [[nodiscard]] Piece *clone() const override;
-    [[nodiscard]] int code() const override;
+    [[nodiscard]] double code() const override;
 
     friend std::ostream &operator<<(std::ostream &output, Pawn *&p);
 

@@ -1,10 +1,13 @@
 #ifdef DEBUG
+
 #include "assert_util.h"
 
 #ifndef _WIN32
+
 #  include <execinfo.h>
 #  include <iostream>
 #  include <cxxabi.h>
+
 #endif
 
 void printstacktracehelper(std::ostream &out, int depth) {
@@ -149,7 +152,7 @@ void printstacktracehelper(std::ostream &out, int depth) {
           default:
             std::cerr << "Stack Trace Finder - Recursive Failure!!" << " @ "
                       << __FILE__ << " " << __LINE__ << std::endl;
-            fatal_assert();
+            FATAL_ASSERT
         }
 
       if (parse_state == ParseState::kInOffset && !end_offset)

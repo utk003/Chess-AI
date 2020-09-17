@@ -51,7 +51,7 @@ class GameResult {
         case NONE:
           return "none";
 
-        default: fatal_assert();
+        default: FATAL_ASSERT
       }
     }
 
@@ -66,7 +66,7 @@ class GameResult {
         case NONE:
           return 0;
 
-        default: fatal_assert();
+        default: FATAL_ASSERT
       }
     }
 

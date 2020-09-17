@@ -59,7 +59,7 @@ class PlayerType {
         case AI:
           return "AI Network Player";
 
-        default: fatal_assert();
+        default: FATAL_ASSERT
       }
     }
 

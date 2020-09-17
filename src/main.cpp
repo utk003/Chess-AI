@@ -16,12 +16,14 @@ bool LOAD_PREV_NETWORK = false;
 int NUM_TRAINING_ITERATIONS = 1;
 int NETWORK_SAVE_INTERVAL = 20;
 
+std::string NETWORK_FILE_PATH = network::NetworkStorage::LATEST_NETWORK_FILE_PATH;
+
 int run_game(player::PlayerType white = player::PlayerType::HUMAN,
              player::PlayerType black = player::PlayerType::HUMAN,
              const std::string &s = "assets/game_states/chess_default_start.txt") {
 
   if (LOAD_PREV_NETWORK)
-    network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
+    network::NetworkStorage::initialize(NETWORK_FILE_PATH);
   else
     network::NetworkStorage::initialize();
 
@@ -72,7 +74,7 @@ game::GameResult create_game_training_case() {
   return result;
 }
 
-double get_overall_result(double mcts_result, double game_result, double scale = 20.0) {
+double get_overall_result(double mcts_result, double game_result, double scale = 4.0) {
   static double mcts_weight = 5.0;
   static double game_result_weight = 1.0;
   static double weights_sum = mcts_weight + game_result_weight; // 6.0
@@ -122,8 +124,6 @@ run_training_iteration(std::vector<std::pair<game::Board *, double>> &boards_to_
 }
 
 int train_network() {
-  network::NetworkStorage::SAVE_NETWORKS = true;
-
   std::vector<std::pair<game::Board *, double>> boards_to_train_on;
   network::NetworkStorage::setTestCaseSelector([&](game::Board *b, double d) -> void {
     // arbitrary 1/5 chance of any game state being a training case
@@ -135,7 +135,7 @@ int train_network() {
   });
 
   if (LOAD_PREV_NETWORK)
-    network::NetworkStorage::initialize(network::NetworkStorage::LATEST_NETWORK_FILE_PATH);
+    network::NetworkStorage::initialize(NETWORK_FILE_PATH);
   else
     network::NetworkStorage::initialize();
 
@@ -147,17 +147,6 @@ int train_network() {
 }
 
 int test() {
-  auto *game = new game::Game(new game::Board(8, 8));
-  game->board()->loadFromFile("assets/game_states/chess_default_start.txt");
-
-  for (int i = 0; i < 10000; ++i)
-    delete game->clone();
-  std::cout << "Done generating" << std::endl;
-  thread::sleep_seconds(15);
-//  std::cout << "Done deleting" << std::endl;
-//  thread::sleep_seconds(15);
-  std::cout << "Over" << std::endl;
-
   return 0;
 }
 
@@ -213,17 +202,17 @@ void updateWorkingDirectory(const std::string &target_dir = "Chess-AI") {
     cd(target.c_str());
     if (std::filesystem::current_path() != target) {
       std::cerr << "Invalid working directory" << std::endl;
-      fatal_assert();
+      FATAL_ASSERT
     }
   } else {
     if (target_dir.find_last_of("/\\") != std::string::npos) {
-      debug_assert();
+      FATAL_ASSERT
       return;
     }
 
     std::string current_path = std::filesystem::current_path();
     if (current_path.find(target_dir) == std::string::npos) {
-      debug_assert();
+      FATAL_ASSERT
       return;
     }
 
@@ -234,6 +223,15 @@ void updateWorkingDirectory(const std::string &target_dir = "Chess-AI") {
       cd("..");
     }
   }
+}
+
+void updateWorkingDirectory(int num_args, char **args) {
+  if (num_args <= 1)
+    updateWorkingDirectory();
+  else
+    updateWorkingDirectory(args[1]); // args[0] is the command used to run this program??
+
+  std::cout << "Current Working Directory: " << std::filesystem::current_path() << std::endl;
 }
 
 void updateMCTSParameters() {
@@ -247,19 +245,15 @@ void updateMCTSParameters() {
   std::cout << "Number of MCTS Working Threads: " << tree::MCTS::DEFAULT_NUM_THREADS << std::endl;
 }
 
-void updateWorkingDirectory(int num_args, char **args) {
-  if (num_args <= 1)
-    updateWorkingDirectory();
-  else
-    updateWorkingDirectory(args[1]); // args[0] is the command used to run this program??
-
-  std::cout << "Current Working Directory: " << std::filesystem::current_path() << std::endl;
-}
-
 void updateTrainingParameters() {
-  LOAD_PREV_NETWORK = false;
-  std::cout << (LOAD_PREV_NETWORK ? "Loading previous network (from \"network-dump/latest.txt\")"
+  NETWORK_FILE_PATH = network::NetworkStorage::LATEST_NETWORK_FILE_PATH;
+  LOAD_PREV_NETWORK = true;
+  std::cout << (LOAD_PREV_NETWORK ? "Loading previous network (from \"" + NETWORK_FILE_PATH + "\")"
                                   : "Generating new random network") << std::endl;
+
+  network::NetworkStorage::SAVE_NETWORKS = true;
+  std::cout << "Networks will" << (network::NetworkStorage::SAVE_NETWORKS ? " ": " NOT ")
+            << "be saved during training" << std::endl;
 
   NUM_TRAINING_ITERATIONS = 100;
   std::cout << "Number of Training Iterations: " << NUM_TRAINING_ITERATIONS << " iteration";
@@ -284,5 +278,5 @@ int main(int num_args, char **args) {
   updateTrainingParameters();
   std::cout << std::endl;
 
-  return train_network();//run_game(player::PlayerType::HUMAN, player::PlayerType::AI);
+  return train_network();
 }

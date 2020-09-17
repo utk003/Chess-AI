@@ -8,7 +8,7 @@ std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(gam
   game::Board *board = game->board();
 
   piece::PieceColor current_color = game->getCurrentColor();
-  int color_multiplier = current_color.colorCode();
+  double color_multiplier = current_color.value();
 
   double currEval = color_multiplier * predictPosition(board);
 
@@ -20,7 +20,7 @@ std::pair<double, std::map<game::Move, double>> decider::Decider::prediction(gam
       board->doMove(new game::Move(move), game);
       actionMap[move] = color_multiplier * predictPosition(board);
       board->undoMove(game);
-    } else debug_assert();
+    } else DEBUG_ASSERT
 
   return {currEval, actionMap};
 }
@@ -34,7 +34,7 @@ double decider::Randomizer::predictPosition(game::Board *b) {
 double decider::Minimaxer::predictPosition(game::Board *b) {
   return b->score(
     [&](piece::Piece *piece) -> double {
-      return piece->color().colorCode() * piece->type().minimaxValue();
+      return piece->color().value() * piece->type().minimaxValue();
     }
   );
 }

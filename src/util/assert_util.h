@@ -8,15 +8,14 @@ void printstacktracehelper(std::ostream &out, int depth);
 #
 #  undef NDEBUG // allow assert()
 #  include <cassert>
-#
-#  define fatal_assert() assert(false)  // macro to kill program during debug AND release
-#  define debug_assert() { printstacktracehelper(std::cerr, 25); assert(false); }  // macro to kill program only during debug
+#  define FATAL_ASSERT { assert(false); } // macro to kill program during debug AND release
+#  define DEBUG_ASSERT { printstacktracehelper(std::cerr, 25); assert(false); } // macro to kill program only during debug
 // if DEBUG is defined -> Debug Mode
 
 #else
 #  define print_stack_trace() // debugging tool
-#  define fatal_assert() { __builtin_unreachable(); exit(-1); } // macro to kill program during debug AND release
-#  define debug_assert()                                        // macro to kill program only during debug
+#  define FATAL_ASSERT { __builtin_unreachable(); exit(-1); } // macro to kill program during debug AND release
+#  define DEBUG_ASSERT {}                                     // macro to kill program only during debug
 // else DEBUG is not defined -> Release/Testing/Production Mode
 
 #endif

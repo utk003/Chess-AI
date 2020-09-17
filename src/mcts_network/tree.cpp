@@ -91,7 +91,7 @@ std::pair<game::Move, tree::Node *> tree::Node::selectOptimalMove(const std::fun
     }
   }
 
-  if (optimal.second == nullptr) debug_assert();
+  if (optimal.second == nullptr) DEBUG_ASSERT
   return optimal;
 }
 
@@ -144,7 +144,7 @@ std::pair<game::Move, tree::Node *>
 tree::MCTS::run_mcts_multithreaded(game::Game *game, int num_threads, decider::Decider *move_ranker,
                                    const std::vector<Node *> &roots) {
   if (roots.size() < num_threads) {
-    debug_assert();
+    DEBUG_ASSERT
     num_threads = roots.size();
   }
 
@@ -195,12 +195,8 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       std::pair<game::Move, Node *> optimal = select_optimal_move(node);
       node = optimal.second;
       bool success = clone->tryMove(optimal.first);
-      if (!success) { // TODO delete debug prints
-//        game->board()->saveToFile("mcts_start");
-//        clone->board()->saveToFile("mcts_crash");
-//        std::cout << optimal.first.toString() << std::endl;
-        debug_assert();
-
+      if (!success) {
+        DEBUG_ASSERT
         delete clone;
         goto TERMINATE_LOOP; // jump to end of mcts
       }
@@ -208,7 +204,7 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       searchPath.push_back(node);
     }
 
-    int curr_color_code = clone->getCurrentColor().colorCode();
+    double curr_color_code = clone->getCurrentColor().value();
     double value;
     // If game is over
     if (clone->isOver()) {
@@ -225,7 +221,7 @@ void tree::MCTS::mcts(game::Game *game, decider::Decider *move_ranker, Node *roo
       // unknown outcome... using minimax board scoring -> TODO find better default result - finished??
       value = clone->board()->score(
         [&](piece::Piece *piece) -> double {
-          return curr_color_code * piece->color().colorCode() * piece->type().minimaxValue();
+          return curr_color_code * piece->color().value() * piece->type().minimaxValue();
         }
       );
       // now apply sigmoid to value -> (-∞, ∞) maps to (0.0, 1.0)
@@ -274,7 +270,7 @@ double tree::MCTS::score_move(Node *parent, Node *child) {
 double tree::MCTS::expand_node(tree::Node *node, game::Game *game, decider::Decider *move_ranker) {
   std::pair<double, std::map<game::Move, double>> prediction = move_ranker->prediction(game);
 
-  int color_multiplier = node->color_to_play().colorCode();
+  double color_multiplier = node->color_to_play().value();
 
   double sum_weights = 0.0;
   std::map<game::Move, double> weights, log_weights = prediction.second;

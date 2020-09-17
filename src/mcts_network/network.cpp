@@ -13,7 +13,7 @@ network::Network::Network() : Network({64, 144, 225, 100, 1}) {}
 
 network::Network::Network(std::vector<int> dims) {
   if (dims.empty()) {
-    debug_assert();
+    DEBUG_ASSERT
     dims = {64, 144, 225, 100, 1};
   } else {
     if (dims[0] != 64)
@@ -22,7 +22,7 @@ network::Network::Network(std::vector<int> dims) {
       dims.push_back(1);
 
     if (dims.size() <= 2) {
-      debug_assert();
+      DEBUG_ASSERT
       dims = {64, 144, 225, 100, 1};
     }
   }
@@ -189,7 +189,7 @@ network::Network *network::Network::loadFromFile(const std::string &file_path) {
   if (in_stream.is_open()) {
     in_stream >> network;
     in_stream.close();
-  } else debug_assert();
+  } else DEBUG_ASSERT
 
   return network;
 }
@@ -273,7 +273,7 @@ bool network::NetworkStorage::SAVE_NETWORKS = false;
 std::function<void(game::Board *, double)> network::NetworkStorage::_network_training_case;
 
 network::Network *network::NetworkStorage::current_network() {
-  if (_current_network == nullptr) debug_assert();
+  if (_current_network == nullptr) DEBUG_ASSERT
   return _current_network;
 }
 
@@ -285,7 +285,7 @@ inline network::Network *create_network(Args &&... args) {
 
 network::Network *network::NetworkStorage::initialize() {
   if (_current_network != nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     delete _current_network;
   }
 
@@ -296,7 +296,7 @@ network::Network *network::NetworkStorage::initialize() {
 }
 network::Network *network::NetworkStorage::initialize(const std::vector<int> &dims) {
   if (_current_network != nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     delete _current_network;
   }
 
@@ -307,7 +307,7 @@ network::Network *network::NetworkStorage::initialize(const std::vector<int> &di
 }
 network::Network *network::NetworkStorage::initialize(const std::string &file_path) {
   if (_current_network != nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     delete _current_network;
   }
 
@@ -394,7 +394,7 @@ std::ostream &operator<<(std::ostream &output, Network *&net) {
       for (i = 0; i < net->_dimensions[n]; ++i)
         for (j = 0; j < net->_dimensions[n + 1]; ++j)
           output << string::from_double(net->_connections[n][i][j]) << " ";
-  } else debug_assert();
+  } else DEBUG_ASSERT
 
   return output;
 }

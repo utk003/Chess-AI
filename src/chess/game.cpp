@@ -41,7 +41,7 @@ game::Board::~Board() {
 
 int game::Board::getPositionThreats(int r, int c, piece::PieceColor kingColor) const {
   if (!isValidPosition(r, c)) {
-    debug_assert();
+    DEBUG_ASSERT
     return 0;
   }
 
@@ -168,14 +168,14 @@ bool game::Board::canPieceMove(int r, int c, int toR, int toC) {
   // get piece indices
   int from = locMap(r, c), to = locMap(toR, toC);
   if (from < 0 || to < 0) {
-    debug_assert();
+    DEBUG_ASSERT
     return false;
   }
 
   // get pieces
   piece::PieceColor pieceColor = _pieces[from]->color();
   if (!pieceColor.isColored()) {
-    debug_assert();
+    DEBUG_ASSERT
     return false;
   }
 
@@ -217,7 +217,7 @@ void game::Board::getMovesFromSquare(int r, int c, std::vector<game::Move> *move
           if (move.verify(this))
             moves->push_back(move);
       }
-  } else debug_assert();
+  } else DEBUG_ASSERT
 }
 
 void game::Board::getPossibleMoves(std::vector<game::Move> *white, std::vector<game::Move> *black) {
@@ -240,7 +240,7 @@ void game::Board::getPossibleMoves(std::vector<game::Move> *white, std::vector<g
 
 bool game::Board::doMove(Move *move, Game *game) {
   if (move == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return false;
   }
   _move_stack.push(move);
@@ -258,7 +258,7 @@ bool game::Board::doMove(Move *move, Game *game) {
 
 void game::Board::undoMove(Game *game, const int depth) {
   if (depth <= 0 || _move_stack.size() < depth) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
   _move_count++;
@@ -330,7 +330,7 @@ std::istream &operator>>(std::istream &input, Board *&b) {
     input >> ind >> spacer;
     if (ind == i)
       input >> b->_pieces[i];
-    else debug_assert(); // -> Malformed input file!!
+    else DEBUG_ASSERT // -> Malformed input file!!
     getline(input, spacer); // skip to end of line
   }
 
@@ -354,7 +354,7 @@ void game::Board::saveToFile(const std::string &fileName, const std::function<vo
     Board *b = this;
     out_stream << b;
     do_later(out_stream);
-  } else debug_assert();
+  } else DEBUG_ASSERT
 }
 
 void game::Board::loadFromFile(const std::string &fileName, const std::function<void(std::ifstream &)> &do_later) {
@@ -363,7 +363,7 @@ void game::Board::loadFromFile(const std::string &fileName, const std::function<
     Board *b = this;
     in_stream >> b;
     do_later(in_stream);
-  } else debug_assert();
+  } else DEBUG_ASSERT
 }
 
 // Move Class
@@ -379,7 +379,7 @@ std::vector<game::Move> game::Move::getMoves(int r1, int c1, int r2, int c2, gam
       moves.emplace_back(r1, c1, r2, c2, piece::PieceType::BISHOP);
     } else
       moves.emplace_back(r1, c1, r2, c2, piece::PieceType::NONE);
-  } else debug_assert();
+  } else DEBUG_ASSERT
 
   return moves;
 }
@@ -436,12 +436,12 @@ bool game::Move::verify(Board *board) const {
   // Implicit calls to:
   piece::Piece *p1 = board->getPiece(_start_row, _start_col);
   if (p1 == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return false;
   }
   piece::Piece *p2 = board->getPiece(_end_row, _end_col);
   if (p2 == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return false;
   }
 
@@ -593,7 +593,7 @@ bool game::Move::doMove(Board *board) {
         // timer hit 600 <--> Program time out
         if (newPiece == nullptr) {
           std::cout << "Program timed out" << std::endl;
-          fatal_assert();
+          FATAL_ASSERT
         }
 
         addReplacedPiece(r1, c1, piece);
@@ -702,7 +702,7 @@ game::Game::~Game() {
 
 void game::Game::setPlayer(piece::PieceColor color, player::PlayerType type) {
   if (!color.isColored()) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
 
@@ -729,11 +729,11 @@ void game::Game::updateGraphicsBoard(Board *board) {
 
 void game::Game::startGame() {
   if (_white_player == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
   if (_black_player == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
 
@@ -785,11 +785,11 @@ game::Game *game::Game::clone() const {
 
 void game::Game::selectSquare(int x, int y) {
   if (!_started) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
   if (!_board->isValidPosition(x, y)) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
 
@@ -818,14 +818,13 @@ bool game::Game::tryMove(const Move &move) {
   // do move
   bool isCapture = _board->doMove(new Move(move), this);
 
-  // TODO -> replace 50 move no-capture stalemate mechanic (change from 250 back to 50)
   // check for 50 move no-capture stalemate
   if (!isCapture)
     _moves_since_last_capture++;
   else
     _moves_since_last_capture = 0;
 
-  if (_moves_since_last_capture >= 250) { // 50 non-capture moves = Stalemate
+  if (_moves_since_last_capture >= 50) { // 50 non-capture moves = Stalemate
     _over = true;
     _result = game::GameResult::STALEMATE;
   } else

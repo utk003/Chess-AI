@@ -26,8 +26,7 @@ piece::Piece *piece::PieceType::getPieceOfType(PieceType t, PieceColor c) {
     case NONE:
       return new Piece();
 
-    default:
-      fatal_assert();
+    default: FATAL_ASSERT
   }
 }
 
@@ -41,7 +40,7 @@ piece::Piece::Piece() {
 
 piece::Piece::Piece(piece::PieceColor c, piece::PieceType t) {
   // Must be a valid color -AND- Must be a non-empty piece
-  if (!c.isColored() || t.isEmpty()) fatal_assert();
+  if (!c.isColored() || t.isEmpty()) FATAL_ASSERT
 
   // Create a new Piece with the given color and type
   _color = c;
@@ -77,8 +76,8 @@ piece::Piece *piece::Piece::clone() const {
   return newPiece;
 }
 
-int piece::Piece::code() const {
-  return _type.typeCode() * _color.colorCode();
+double piece::Piece::code() const {
+  return _color.value() * _type.value();
 }
 
 // King Class
@@ -119,8 +118,8 @@ piece::Piece *piece::King::clone() const {
   return newPiece;
 }
 
-int piece::King::code() const {
-  return _color.colorCode() * (_type.typeCode() + _moved * piece::PieceType::TYPE_CODE_DIFFERENCE / 2);
+double piece::King::code() const {
+  return _color.value() * (_type.value() + _moved * piece::PieceType::PIECE_TYPE_VALUE_SPACE);
 }
 
 // Queen Class
@@ -153,8 +152,8 @@ piece::Piece *piece::Rook::clone() const {
   return newPiece;
 }
 
-int piece::Rook::code() const {
-  return _color.colorCode() * (_type.typeCode() + _moved * piece::PieceType::TYPE_CODE_DIFFERENCE / 2);
+double piece::Rook::code() const {
+  return _color.value() * (_type.value() + _moved * piece::PieceType::PIECE_TYPE_VALUE_SPACE);
 }
 
 // Knight Class
@@ -234,8 +233,8 @@ piece::Piece *piece::Pawn::clone() const {
   return newPiece;
 }
 
-int piece::Pawn::code() const {
-  return _color.colorCode() * (_type.typeCode() + _moved2x * piece::PieceType::TYPE_CODE_DIFFERENCE / 2);
+double piece::Pawn::code() const {
+  return _color.value() * (_type.value() + _moved2x * piece::PieceType::PIECE_TYPE_VALUE_SPACE);
 }
 
 // PieceManager class
@@ -316,8 +315,7 @@ std::ostream &operator<<(std::ostream &output, Piece *&p) {
       output << p->_type << " " << p->_color << " " << ".";
       break;
 
-    default:
-      fatal_assert();
+    default: FATAL_ASSERT
   }
   return output;
 }

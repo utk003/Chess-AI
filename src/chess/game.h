@@ -39,7 +39,7 @@ class Board : piece::PieceManager {
 
     [[nodiscard]] inline piece::Piece *getPiece(int r, int c) const {
       if (!isValidPosition(r, c)) {
-        debug_assert();
+        DEBUG_ASSERT
         return nullptr;
       }
       return _pieces[locMap(r, c)];
@@ -98,7 +98,7 @@ class Board : piece::PieceManager {
 
     [[nodiscard]] constexpr int locMap(int r, int c) const {
       if (!isValidPosition(r, c)) {
-        debug_assert();
+        DEBUG_ASSERT
         return -1;
       }
       return r * _width + c;
@@ -141,7 +141,7 @@ class Move : BoardController, piece::PieceManager {
              (_start_row == m._start_row && _start_col == m._start_col && _end_row == m._end_row &&
               _end_col < m._end_col) ||
              (_start_row == m._start_row && _start_col == m._start_col && _end_row == m._end_row &&
-              _end_col < m._end_col && _pawn_promotion_type.typeCode() < m._pawn_promotion_type.typeCode());
+              _end_col < m._end_col && _pawn_promotion_type.value() < m._pawn_promotion_type.value());
     }
     bool operator<=(const Move &m) const { return !(m < *this); }
     bool operator>(const Move &m) const { return m < *this; }

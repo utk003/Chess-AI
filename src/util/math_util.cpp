@@ -56,7 +56,7 @@ int math::random(int size) { return random(0, size - 1); }
 // clamp x to [range.first, range.second]
 void math::clamp(double &x, std::pair<double, double> range) {
   if (range.first > range.second) {
-    debug_assert();
+    DEBUG_ASSERT
     double temp = range.first;
     range.first = range.second;
     range.second = temp;
@@ -69,7 +69,7 @@ void math::clamp(double &x, std::pair<double, double> range) {
 }
 void math::clamp(float &x, std::pair<float, float> range) {
   if (range.first > range.second) {
-    debug_assert();
+    DEBUG_ASSERT
     double temp = range.first;
     range.first = range.second;
     range.second = temp;

@@ -48,37 +48,37 @@ class PieceColor {
     };
 
     PieceColor() = default;
-    PieceColor(Color c) { value = c; }
+    PieceColor(Color c) { _value = c; }
 
-    constexpr operator Color() const { return value; }
+    constexpr operator Color() const { return _value; }
     explicit operator bool() = delete;
 
-    constexpr bool operator==(PieceColor c) const { return value == c.value; }
-    constexpr bool operator!=(PieceColor c) const { return value != c.value; }
+    constexpr bool operator==(PieceColor c) const { return _value == c._value; }
+    constexpr bool operator!=(PieceColor c) const { return _value != c._value; }
 
     // none -> none, black -> white, white -> black
-    inline PieceColor operator!() const { return value == NONE ? NONE: value == BLACK ? WHITE: BLACK; }
+    inline PieceColor operator!() const { return _value == NONE ? NONE: _value == BLACK ? WHITE: BLACK; }
 
-    constexpr bool isWhite() const { return value == WHITE; }
-    constexpr bool isBlack() const { return value == BLACK; }
-    constexpr bool isColored() const { return value != NONE; }
+    constexpr bool isWhite() const { return _value == WHITE; }
+    constexpr bool isBlack() const { return _value == BLACK; }
+    constexpr bool isColored() const { return _value != NONE; }
 
     friend std::istream &operator>>(std::istream &input, PieceColor &c) {
       std::string str;
       input >> str;
 
       if (str == "black")
-        c.value = BLACK;
+        c._value = BLACK;
       else if (str == "white")
-        c.value = WHITE;
+        c._value = WHITE;
       else
-        c.value = NONE;
+        c._value = NONE;
 
       return input;
     }
 
     friend std::ostream &operator<<(std::ostream &output, PieceColor &c) {
-      switch (c.value) {
+      switch (c._value) {
         case BLACK:
           output << "black";
           break;
@@ -90,28 +90,26 @@ class PieceColor {
           output << "none";
           break;
 
-        default:
-          fatal_assert();
+        default: FATAL_ASSERT
       }
       return output;
     }
 
-    constexpr int colorCode() const {
-      switch (value) {
+    constexpr double value() const {
+      switch (_value) {
         case BLACK:
-          return -1;
+          return -1.0;
         case WHITE:
-          return 1;
+          return 1.0;
         case NONE:
-          return 0;
+          return 0.0;
 
-        default:
-          fatal_assert();
+        default: FATAL_ASSERT
       }
     }
 
   private:
-    Color value;
+    Color _value;
 };
 
 // The PieceType "enum":
@@ -137,21 +135,21 @@ class PieceType {
     };
 
     PieceType() = default;
-    PieceType(Type t) { value = t; }
+    PieceType(Type t) { _value = t; }
 
-    constexpr operator Type() const { return value; }
+    constexpr operator Type() const { return _value; }
     explicit operator bool() = delete;
 
-    constexpr bool operator==(PieceType c) const { return value == c.value; }
-    constexpr bool operator!=(PieceType c) const { return value != c.value; }
+    constexpr bool operator==(PieceType c) const { return _value == c._value; }
+    constexpr bool operator!=(PieceType c) const { return _value != c._value; }
 
-    constexpr bool isKing() const { return value == KING; }
-    constexpr bool isQueen() const { return value == QUEEN; }
-    constexpr bool isRook() const { return value == ROOK; }
-    constexpr bool isKnight() const { return value == KNIGHT; }
-    constexpr bool isBishop() const { return value == BISHOP; }
-    constexpr bool isPawn() const { return value == PAWN; }
-    constexpr bool isEmpty() const { return value == NONE; }
+    constexpr bool isKing() const { return _value == KING; }
+    constexpr bool isQueen() const { return _value == QUEEN; }
+    constexpr bool isRook() const { return _value == ROOK; }
+    constexpr bool isKnight() const { return _value == KNIGHT; }
+    constexpr bool isBishop() const { return _value == BISHOP; }
+    constexpr bool isPawn() const { return _value == PAWN; }
+    constexpr bool isEmpty() const { return _value == NONE; }
 
     inline Piece *getPieceOfType(PieceColor c) const { return getPieceOfType(*this, c); }
     static Piece *getPieceOfType(PieceType t, PieceColor c);
@@ -161,25 +159,25 @@ class PieceType {
       input >> str;
 
       if (str == "king")
-        t.value = KING;
+        t._value = KING;
       else if (str == "queen")
-        t.value = QUEEN;
+        t._value = QUEEN;
       else if (str == "rook")
-        t.value = ROOK;
+        t._value = ROOK;
       else if (str == "knight")
-        t.value = KNIGHT;
+        t._value = KNIGHT;
       else if (str == "bishop")
-        t.value = BISHOP;
+        t._value = BISHOP;
       else if (str == "pawn")
-        t.value = PAWN;
+        t._value = PAWN;
       else
-        t.value = NONE;
+        t._value = NONE;
 
       return input;
     }
 
     friend std::ostream &operator<<(std::ostream &output, PieceType &t) {
-      switch (t.value) {
+      switch (t._value) {
         case KING:
           output << "king";
           break;
@@ -203,14 +201,13 @@ class PieceType {
           output << "none";
           break;
 
-        default:
-          fatal_assert();
+        default: FATAL_ASSERT
       }
       return output;
     }
 
     constexpr int minimaxValue() const {
-      switch (value) {
+      switch (_value) {
         case KING:
           return 100;
 
@@ -230,13 +227,12 @@ class PieceType {
         case NONE:
           return 0;
 
-        default:
-          fatal_assert();
+        default: FATAL_ASSERT
       }
     }
 
     constexpr int minimaxValue(int r, int c, int homeRow) const {
-      switch (value) {
+      switch (_value) {
         case KING: // +10 if in home row
           return 100 + 10 * (r == homeRow);
 
@@ -259,37 +255,35 @@ class PieceType {
         case NONE:
           return 0;
 
-        default:
-          fatal_assert();
+        default: FATAL_ASSERT
       }
     }
 
-    const static int TYPE_CODE_DIFFERENCE = 1 << 20;
-    constexpr int typeCode() const {
-      switch (value) {
+    constexpr const static double PIECE_TYPE_VALUE_SPACE = 4.0 / 10; // 4.0 max value && 10 is max multiplier
+    constexpr double value() const {
+      switch (_value) {
         case KING:
-          return 1 * TYPE_CODE_DIFFERENCE;
+          return 1.0 * PIECE_TYPE_VALUE_SPACE; // 2.0 reserved for second king state
         case QUEEN:
-          return 2 * TYPE_CODE_DIFFERENCE;
+          return 3.0 * PIECE_TYPE_VALUE_SPACE;
         case ROOK:
-          return 3 * TYPE_CODE_DIFFERENCE;
+          return 4.0 * PIECE_TYPE_VALUE_SPACE; // 5.0 reserved for second rook state
         case KNIGHT:
-          return 4 * TYPE_CODE_DIFFERENCE;
+          return 6.0 * PIECE_TYPE_VALUE_SPACE;
         case BISHOP:
-          return 5 * TYPE_CODE_DIFFERENCE;
+          return 7.0 * PIECE_TYPE_VALUE_SPACE;
         case PAWN:
-          return 6 * TYPE_CODE_DIFFERENCE;
+          return 8.0 * PIECE_TYPE_VALUE_SPACE; // 9.0 reserved for second pawn state
 
         case NONE:
-          return 0;
+          return 0.0;
 
-        default:
-          fatal_assert();
+        default: FATAL_ASSERT
       }
     }
 
   private:
-    Type value;
+    Type _value;
 };
 
 }

@@ -21,7 +21,7 @@ graphics::OpenGL *graphics::OpenGL::get_instance(game::Game *game, const std::st
   instance->initialize();
 
   if (instance->_window == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     delete instance;
     return nullptr;
   }
@@ -32,7 +32,7 @@ graphics::OpenGL *graphics::OpenGL::get_instance(game::Game *game, const std::st
 
 graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
   if (game == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
   _game = game;
@@ -43,12 +43,12 @@ graphics::OpenGL::OpenGL(game::Game *game, const std::string &game_name) {
   _white = game->white_player();
   if (_white != nullptr)
     _human_white = _white->type().isHumanPlayer() ? (player::HumanPlayer *) _white: nullptr;
-  else debug_assert();
+  else DEBUG_ASSERT
 
   _black = game->black_player();
   if (_black != nullptr)
     _human_black = _black->type().isHumanPlayer() ? (player::HumanPlayer *) _black: nullptr;
-  else debug_assert();
+  else DEBUG_ASSERT
 
   _game_name = game_name;
   _window_title = _game_name + ": " + _white->type().toString() + " vs " + _black->type().toString();
@@ -125,7 +125,7 @@ void graphics::OpenGL::loadTexture(const std::string &fileName, std::map<std::st
     glGenerateMipmap(GL_TEXTURE_2D);
 
     text_map[fileName] = textureID;
-  } else debug_assert();
+  } else DEBUG_ASSERT
 
   stbi_image_free(buf);
 }
@@ -217,14 +217,14 @@ void graphics::OpenGL::keyboardPressed(GLFWwindow *window, int key, int scancode
 void graphics::OpenGL::initialize() {
   // Exit if game doesn't exist
   if (_game == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
 
   // Initialize GLFW
   if (!glfwInit()) {
     std::cerr << "Failed to initialize GLFW" << std::endl;
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
 
@@ -239,7 +239,7 @@ void graphics::OpenGL::initialize() {
   if (_window == nullptr) {
     std::cerr << "Failed to open GLFW window. Note: Intel GPUs are not OpenGL 3.3 compatible." << std::endl;
     glfwTerminate();
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
   glfwMakeContextCurrent(_window);
@@ -249,7 +249,7 @@ void graphics::OpenGL::initialize() {
   if (glewInit() != GLEW_OK) {
     std::cerr << "Failed to initialize GLEW" << std::endl;
     glfwTerminate();
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
 
@@ -294,7 +294,7 @@ void graphics::OpenGL::initialize() {
 
 void graphics::OpenGL::updateGraphics(game::Board *board) {
   if (board == nullptr) {
-    debug_assert();
+    DEBUG_ASSERT
     return;
   }
 
@@ -371,7 +371,7 @@ void graphics::OpenGL::run() {
     }
     else {
       if (!_game->getResult().isGameUndecided())
-        debug_assert();
+        DEBUG_ASSERT
       _window_title = _game_name + ": " + _white->type().toString() + " vs " + _black->type().toString();
     }
     // Update Window Title

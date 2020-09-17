@@ -28,7 +28,7 @@ player::Player *player::PlayerType::getPlayerOfType(PlayerType type, game::Game 
     case AI:
       return new NetworkAIPlayer(game, color);
 
-    default: fatal_assert();
+    default: FATAL_ASSERT
   }
 }
 
@@ -50,7 +50,7 @@ void player::Player::playMove(const game::Move &m) {
     _game->board()->set_pawn_upgrade_type(piece::PieceType::QUEEN); // Default in case move "forgot" it???
     bool move_success = _game->tryMove(m);
     if (!move_success) { // Move must succeed
-      debug_assert();
+      DEBUG_ASSERT
       findAndPlayMove();
     }
   }
@@ -64,8 +64,7 @@ void player::Player::playRandomMove() {
 }
 
 void player::Player::playNextMove() {
-  if (_move_count_at_start >= 0)
-    debug_assert();
+  if (_move_count_at_start >= 0) DEBUG_ASSERT
 
   _move_count_at_start = _game->board()->move_count();
   this->findAndPlayMove();
@@ -298,8 +297,6 @@ void player::AlphaBetaPlayer::findAndPlayMove() {
     return;
   }
 
-  std::cout << "AI: " << _type.toString() << " (" << _color << ")" << std::endl;
-
   thread::create(timeKeeper, this, _move_counter, 120); // set up 120 second thinking timer
 
   playMove(bestMove());
@@ -329,11 +326,8 @@ game::Move player::AlphaBetaPlayer::bestMove() {
   }
 
   game::Move selectedMove = moves[0];
-  int value = -10000, alpha = -10000, beta = 10000, newScore, c = 0, totMoves = moves.size();
-
+  int value = -10000, alpha = -10000, beta = 10000, newScore;
   for (const auto &it : moves_sortedByEndScore) {
-    std::cout << "    Processing Move: " << std::to_string(c + 1) << "/" << std::to_string(totMoves) << std::endl;
-
     _simulation_board->doMove(new game::Move(it.second), nullptr);
     newScore = alphaBetaSearch(depth - 1, alpha, beta, false);
     if (value < newScore) {
@@ -345,15 +339,8 @@ game::Move player::AlphaBetaPlayer::bestMove() {
     alpha = std::max(alpha, value);
     if (_is_time_up || alpha >= beta)
       break;
-
-    ++c;
   }
-
   delete _simulation_board;
-
-  std::cout << "  Processed " << c << "/" << moves.size() << " moves";
-  std::cout << " (" << (_is_time_up ? "timed out": "search complete") << ")" << std::endl << std::endl;
-
   return selectedMove;
 }
 

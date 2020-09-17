@@ -152,3 +152,10 @@ Commit 14.3: September 7, 2020
 ------------------------------
 Fixed memory leak arising from graphics update (c11)
 - should prevent limitless memory usage explosion which was crippling training
+
+
+
+Commit 15: September 17, 2020
+-----------------------------
+Update to board mapping algorithm -> results should now be reasonably sized so network can properly process them
+Restored 50 move stalemate to 50 moves.... end of game moves drawing out the game won't provide good training material
