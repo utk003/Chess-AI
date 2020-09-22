@@ -368,10 +368,8 @@ void graphics::OpenGL::run() {
         _window_title = _game_name + ": White won";
       else if (result.isStalemate())
         _window_title = _game_name + ": Stalemate";
-    }
-    else {
-      if (!_game->getResult().isGameUndecided())
-        DEBUG_ASSERT
+    } else {
+      if (!_game->getResult().isGameUndecided()) DEBUG_ASSERT
       _window_title = _game_name + ": " + _white->type().toString() + " vs " + _black->type().toString();
     }
     // Update Window Title
@@ -425,7 +423,7 @@ void graphics::OpenGL::run() {
     // ++count; // loop counter -> for debugging only
 
   } // Check if the ESC key was pressed or the window was closed
-  while (glfwGetKey(_window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(_window) == 0);
+  while (glfwGetKey(_window, GLFW_KEY_ESCAPE) != GLFW_PRESS && !glfwWindowShouldClose(_window));
 }
 
 void graphics::OpenGL::renderSquare(int r, int c, GLuint textbuff, const std::string &image_file_path) {

@@ -118,8 +118,9 @@ class NetworkManager {
 class Optimizer : NetworkManager {
   public:
     static void
-    optimize(Network *network, game::Board *input, double TARGET_OUTPUT, double &lambda, double MAX_LEARNING_CONSTANT,
-             double LEARNING_RATE);
+    optimize(Network *network, game::Board *input, double TARGET_OUTPUT, double &lambda,
+             double MAX_LEARNING_CONSTANT = DEFAULT_MAX_LEARNING_CONSTANT,
+             double LEARNING_RATE = DEFAULT_LEARNING_RATE);
 
     static void dropout(Network *network, double dropout_rate = 0.01);
 

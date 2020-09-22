@@ -7,32 +7,9 @@
 
 #include "assert_util.h"
 
-bool done = false;
-void print(const std::string &s) {
-  if (done)
-    return;
-
-  done = true;
-  std::cout << "Random Number Generator Seed -> " << s;
-}
-
-double run_randomizer() {
-  static auto time_on_start = std::chrono::system_clock::now();
-  static time_t time = std::chrono::system_clock::to_time_t(time_on_start);
-  static std::string string_time(ctime(&time));
-
-  print(string_time); // TODO remove eventually
-
-  static std::seed_seq seed(string_time.begin(), string_time.end());
-  static std::mt19937 randomizer_32bit{seed};
-  static std::uniform_real_distribution<double> distribution{0.0, 1.0};
-
-  return distribution(randomizer_32bit);
-}
-
 // [lower, upper)
 double math::random(double lower, double upper) {
-  return (upper - lower) * run_randomizer() + lower;
+  return (upper - lower) * rng_distribution(mersenne_twister_32bit_randomizer) + lower;
 }
 // [0.0, upper)
 double math::random(double upper) { return random(0.0, upper); }

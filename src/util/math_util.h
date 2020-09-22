@@ -3,8 +3,13 @@
 
 #include <type_traits>
 #include <utility>
+#include <random>
+
 
 namespace math {
+
+static std::mt19937 mersenne_twister_32bit_randomizer;
+static std::uniform_real_distribution<double> rng_distribution{0.0, 1.0};
 
 template<typename T>
 inline constexpr

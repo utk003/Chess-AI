@@ -341,6 +341,7 @@ void network::NetworkStorage::saveLatestNetwork() {
 void network::NetworkStorage::flushStorage() {
   saveNetwork();
   delete _current_network;
+  _current_network = nullptr;
 }
 
 void network::NetworkStorage::saveBoard(const game::Board *board, const tree::Node *node) {

@@ -426,11 +426,9 @@ void player::MonteCarloPlayer::findAndPlayMove() {
 // NetworkAIPlayer Class
 player::NetworkAIPlayer::NetworkAIPlayer(game::Game *g, piece::PieceColor c) : MonteCarloPlayer(g, c,
                                                                                                 player::PlayerType::AI) {
-  _move_ranker = network::NetworkStorage::current_network();
+  _move_ranker = network::NetworkStorage::current_network()->clone();
 }
-player::NetworkAIPlayer::~NetworkAIPlayer() {
-  _move_ranker = nullptr;
-}
+player::NetworkAIPlayer::~NetworkAIPlayer() = default; // _move_ranker is cleared by extended destructor from MCTS player
 
 void player::NetworkAIPlayer::findAndPlayMove() {
   std::pair<game::Move, tree::Node *> move_node_pair = tree::MCTS::run_mcts_multithreaded(_game, _move_ranker);

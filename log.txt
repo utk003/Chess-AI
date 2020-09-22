@@ -159,3 +159,9 @@ Commit 15: September 17, 2020
 -----------------------------
 Update to board mapping algorithm -> results should now be reasonably sized so network can properly process them
 Restored 50 move stalemate to 50 moves.... end of game moves drawing out the game won't provide good training material
+
+
+
+Commit 16: September 21, 2020
+-----------------------------
+Major code cleanup/refactoring
