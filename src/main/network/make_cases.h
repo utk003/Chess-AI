@@ -4,17 +4,23 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <atomic>
 
+#include "../initialization.h"
 #include "../../chess/game.fwd.h"
 
 namespace network {
 
 static std::vector<std::pair<game::Board *, double>> training_boards;
+extern std::atomic_bool save_network;
 
-bool generate_training_cases(const std::function<bool()> &termination_condition = [] { return true; });
+void generate_training_cases(std::vector<std::string> &file_paths, int &sim_count, int num_simulations = 1);
+void generate_training_cases(const std::function<bool()> &termination_condition,
+                             std::vector<std::string> &file_paths,
+                             int &sim_count, int num_simulations = 1);
 
-void save_training_case(const std::string &file_path, const std::pair<game::Board *, double> &training_case);
-std::pair<game::Board *, double> load_training_case(const std::string &file_path);
+std::string save_training_case(const std::string &case_index, const std::pair<game::Board *, double> &training_case);
+std::pair<game::Board *, double> load_training_case(const std::string &file_path, bool pad_file_path = true);
 
 }
 

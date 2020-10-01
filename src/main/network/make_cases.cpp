@@ -1,8 +1,13 @@
 #include "make_cases.h"
 
-#include "../initialization.h"
+#include <chrono>
+#include <functional>
+
 #include "../run_game.h"
 #include "../../util/string_util.h"
+#include "../../util/thread_util.h"
+
+std::atomic_bool network::save_network(false);
 
 double get_overall_result(double mcts_result, double game_result, double scale = 4.0) { // TODO tweak weights/scale
   static double mcts_weight = 5.0;
@@ -13,55 +18,86 @@ double get_overall_result(double mcts_result, double game_result, double scale =
 }
 
 long file_counter = 0L;
-void run_generation_iteration(const int ITERATION_INDEX) {
+void run_simulation_threaded(const int ITERATION_INDEX, std::vector<std::string> &file_paths,
+                             std::atomic_bool &is_complete) {
   game::GameResult result = game::run_game(player::PlayerType::AI, player::PlayerType::AI);
 
   // Update training case target value
   for (auto &pair : network::training_boards) {
     pair.second = get_overall_result(pair.second, result.evaluate()); // update case weight
-    network::save_training_case("training_case/case_" + std::to_string(file_counter++), pair); // save case to file
+    file_paths.push_back(network::save_training_case(std::to_string(file_counter++), pair)); // save case to file
     delete pair.first;
   }
   network::training_boards.clear();
 
-//  // Save network "if necessary"
-//  if (ITERATION_INDEX % settings::GAMES_PER_NETWORK_SAVE == 0)
-//    network::NetworkStorage::saveNetwork(); // TODO shift to where it is actually needed (in training loop)
-
-  if (settings::PRINT_BOARD_SIMULATION_DATA) {
+  if (settings::PRINT_GAME_SIMULATION_DEBUG_INFORMATION) {
     // print iteration completion time
     std::chrono::system_clock::time_point time_on_start = std::chrono::system_clock::now();
-    time_t time1 = std::chrono::system_clock::to_time_t(time_on_start);
-    std::cout << "Finished Generating Cases for Game #" << ITERATION_INDEX << ": " << ctime(&time1);
+    time_t time = std::chrono::system_clock::to_time_t(time_on_start);
+    std::cout << "Finished Generating Cases for Game #" << ITERATION_INDEX << ": " << ctime(&time);
   }
+
+  is_complete.store(true);
+}
+void run_simulation(const int ITERATION_INDEX, std::vector<std::string> &file_paths) {
+  std::atomic_bool is_complete(false);
+  run_simulation_threaded(ITERATION_INDEX, file_paths, is_complete);
 }
 
-bool network::generate_training_cases(const std::function<bool()> &termination_condition) {
-  if (!init::verify())
-    return false;
-
+void network::generate_training_cases(std::vector<std::string> &file_paths, int &sim_count, int num_simulations) {
+  generate_training_cases(settings::TRAINING_TERMINATION_CONDITION, file_paths, sim_count, num_simulations);
+}
+void network::generate_training_cases(const std::function<bool()> &termination_condition,
+                                      std::vector<std::string> &file_paths,
+                                      int &sim_count, int num_simulations) {
   network::NetworkStorage::setTestCaseSelector([&](game::Board *b, double d) -> void {
     settings::SIMULATION_BOARD_SAVE_PROCEDURE(training_boards, b, d);
   });
 
-//  int i = 0;
-//  while (!termination_condition()) {
-//    run_generation_iteration(++i); // TODO unlimited case generation
-//  }
-  for (int i = 1; i <= settings::NUMBER_OF_GAMES_TO_SIMULATE; ++i)
-    run_generation_iteration(i);
+  if (!termination_condition()) {
+    if (settings::PRINT_GAME_SIMULATION_DEBUG_INFORMATION)
+      std::cout << "GAME SIMULATION TIMESTAMP DATA:" << std::endl;
 
-  return true;
+    if (num_simulations <= 1) {
+      while (!termination_condition())
+        run_simulation(++sim_count, file_paths);
+    } else {
+      std::vector<std::atomic_bool> sim_checkers(num_simulations);
+      for (int i = 0; i < num_simulations; ++i)
+        sim_checkers[i].store(true);
+
+      int cycle_counter = 0;
+      thread::do_while_waiting_for([&] {
+        for (auto &it: sim_checkers)
+          if (it) {
+            it.store(false);
+            thread::create(run_simulation_threaded, ++sim_count, std::ref(file_paths), std::ref(it));
+            ++cycle_counter;
+          }
+        if (cycle_counter >= num_simulations) {
+          cycle_counter -= num_simulations;
+          save_network.store(true); // TODO sync better with save in train.cpp @ ~line 36
+        }
+      }, termination_condition);
+      thread::wait_for([&] {
+        return !std::any_of(sim_checkers.begin(), sim_checkers.end(), [](std::atomic_bool &b) { return !b.load(); });
+      });
+    }
+  }
 }
 
-void network::save_training_case(const std::string &file_path, const std::pair<game::Board *, double> &training_case) {
-  training_case.first->saveToFile(file_path, [&](std::ostream &out) -> void {
-    out << string::from_double(training_case.second) << std::endl;
-  });
+std::string
+network::save_training_case(const std::string &case_index, const std::pair<game::Board *, double> &training_case) {
+  std::string file_path = "training_cases/case_" + case_index + ".txt";
+  training_case.first->saveToFile(
+    file_path, [&](std::ostream &out) -> void { out << string::from_double(training_case.second) << std::endl; }, false
+  );
+  return file_path;
 }
-std::pair<game::Board *, double> network::load_training_case(const std::string &file_path) {
+std::pair<game::Board *, double> network::load_training_case(const std::string &file_path, bool pad_file_path) {
   double weight;
   auto *b = new game::Board(8, 8);
-  b->loadFromFile(file_path, [&](std::istream &in) -> void { in >> weight; });
+  b->loadFromFile(pad_file_path ? "training_cases/" + file_path + ".txt": file_path,
+                  [&](std::istream &in) -> void { in >> weight; });
   return {b, weight};
 }

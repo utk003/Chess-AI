@@ -13,13 +13,24 @@
 #endif
 
 #include <thread>
-#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include <functional>
+#include <utility>
 
 #include "../mcts_network/tree.h"
 
+// extern variables
+bool settings::PRINT_INITIALIZATION_DEBUG_INFORMATION = true;
+bool settings::PRINT_GAME_SIMULATION_DEBUG_INFORMATION = false;
+
+int settings::GAMES_PER_NETWORK_SAVE = -1;
+
+std::function<bool()> settings::TRAINING_TERMINATION_CONDITION;
+std::function<void(std::vector<std::pair<game::Board *, double>> &, game::Board *, double)>
+  settings::SIMULATION_BOARD_SAVE_PROCEDURE;
+
+// methods
 void printNewLine(std::ostream &out = std::cout) {
   if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
     out << std::endl;
@@ -176,13 +187,14 @@ void print(const std::string &desc, int val, const std::string &unit, bool putS 
   }
 }
 
-void init::updateTrainingParameters(int network_save_interval_in_games, int number_of_game_plays,
-                                    double ratio_of_training_boards_to_save) {
+void init::updateTrainingParameters(const std::function<bool()> &termination_condition,
+                                    int network_save_interval_in_games, double ratio_of_training_boards_to_save) {
   settings::GAMES_PER_NETWORK_SAVE = network_save_interval_in_games;
-  print("Network Save Interval (in games simulated)", network_save_interval_in_games, "game");
+  print("Network Save Interval (for training)", network_save_interval_in_games, "training case");
 
-  settings::NUMBER_OF_GAMES_TO_SIMULATE = number_of_game_plays;
-  print("Number of Games to Simulate", number_of_game_plays, "game");
+  settings::TRAINING_TERMINATION_CONDITION = termination_condition;
+  if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
+    std::cout << "Training Termination Condition loaded" << std::endl;
 
   settings::SIMULATION_BOARD_SAVE_PROCEDURE = [&](auto &vec, game::Board *b, double d) -> void {
     if (math::chance(ratio_of_training_boards_to_save)) {
@@ -197,30 +209,39 @@ void init::updateTrainingParameters(int network_save_interval_in_games, int numb
   printNewLine();
 }
 
-bool kill(bool is_fatal) {
-  if (is_fatal) FATAL_ASSERT
-  else DEBUG_ASSERT
-  return false;
-}
-
 bool init::verify(bool is_fatal_if_fail) {
-  if (network::NetworkStorage::current_network() == nullptr)
-    return kill(is_fatal_if_fail);
+  if (network::NetworkStorage::current_network() == nullptr) {
+    if (is_fatal_if_fail) FATAL_ASSERT
+    else DEBUG_ASSERT
+    return false;
+  }
   if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
     std::cout << "Network is loaded properly" << std::endl;
 
-  if (!settings::SIMULATION_BOARD_SAVE_PROCEDURE)
-    return kill(is_fatal_if_fail);
+  if (!settings::SIMULATION_BOARD_SAVE_PROCEDURE) {
+    if (is_fatal_if_fail) FATAL_ASSERT
+    else DEBUG_ASSERT
+    return false;
+  }
   if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
     std::cout << "Program can save training cases" << std::endl;
 
-  if (settings::GAMES_PER_NETWORK_SAVE <= 0)
-    return kill(is_fatal_if_fail);
+  if (settings::GAMES_PER_NETWORK_SAVE <= 0) {
+    if (is_fatal_if_fail) FATAL_ASSERT
+    else DEBUG_ASSERT
+    return false;
+  }
   if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
     std::cout << "Network Save Interval is well-defined" << std::endl;
 
-  if (settings::NUMBER_OF_GAMES_TO_SIMULATE <= 0)
-    return kill(is_fatal_if_fail);
+  if (!settings::TRAINING_TERMINATION_CONDITION) {
+    if (is_fatal_if_fail) FATAL_ASSERT
+    else DEBUG_ASSERT
+    return false;
+  }
+  if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
+    std::cout << "Training can terminate safely" << std::endl;
+
   if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
     std::cout << "Program is ready to simulate games" << std::endl;
 

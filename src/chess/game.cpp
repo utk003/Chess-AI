@@ -305,6 +305,14 @@ double game::Board::score(const std::function<double(piece::Piece *)> &piece_sco
     score += piece_scorer(piece);
   return score;
 }
+double game::Board::score(const std::function<double(piece::Piece *, int, int)> &piece_scorer) const {
+  double score = 0;
+  for (int r = 0; r < _length; ++r)
+    for (int c = 0; c < _width; ++c)
+      score += piece_scorer(getPiece(r, c), r, c);
+  return score;
+}
+
 
 namespace game {
 
@@ -348,8 +356,10 @@ std::ostream &operator<<(std::ostream &output, Board *&b) {
 
 }
 
-void game::Board::saveToFile(const std::string &fileName, const std::function<void(std::ofstream &)> &do_later) {
-  std::ofstream out_stream("game_state/" + fileName + ".txt");
+void game::Board::saveToFile(const std::string &file_path,
+                             const std::function<void(std::ofstream &)> &do_later,
+                             bool pad_file_path) {
+  std::ofstream out_stream(pad_file_path ? "game_state/" + file_path + ".txt": file_path);
   if (out_stream.is_open()) {
     Board *b = this;
     out_stream << b;
@@ -357,8 +367,8 @@ void game::Board::saveToFile(const std::string &fileName, const std::function<vo
   } else DEBUG_ASSERT
 }
 
-void game::Board::loadFromFile(const std::string &fileName, const std::function<void(std::ifstream &)> &do_later) {
-  std::ifstream in_stream(fileName);
+void game::Board::loadFromFile(const std::string &file_path, const std::function<void(std::ifstream &)> &do_later) {
+  std::ifstream in_stream(file_path);
   if (in_stream.is_open()) {
     Board *b = this;
     in_stream >> b;

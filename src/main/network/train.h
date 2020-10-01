@@ -5,12 +5,14 @@
 #include <string>
 #include <functional>
 
+#include "../initialization.h"
 #include "../../mcts_network/network.fwd.h"
 
 namespace network::train {
 
-bool train_network(Network *net, const std::vector<std::string> &training_case_files,
-                   const std::function<bool()> &termination_condition = [] { return true; });
+void train_network(const std::vector<std::string> &training_case_files = {});
+void train_network(const std::vector<std::string> &training_case_files, Network *net,
+                   const std::function<bool()> &termination_condition);
 
 }
 

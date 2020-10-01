@@ -3,9 +3,17 @@
 #include "main/network/make_cases.h"
 #include "main/network/train.h"
 
+#include <thread>
+
+#include "mcts_network/tree.h"
+#include "util/thread_util.h"
+
 // command line arguments
-static char **arguments;
-static int num_args;
+char **arguments;
+int num_args;
+
+// create termination lambda variables
+int game_count = 0, end_count = 0;
 
 // The initialize() method initializes all of the different modules of this program
 // and ensures that all necessary preconditions are met.
@@ -13,15 +21,43 @@ static int num_args;
 // Initialization can be verified using init::verify(), which will return true iff
 // the program believes that it is ready to run any of its features, including but
 // not limited to training the network and playing a game with graphics (using OpenGL).
-void initialize() {
+void initialize(const std::function<bool()> &termination_condition = [] { return true; }) {
+  settings::PRINT_INITIALIZATION_DEBUG_INFORMATION = true;
+  settings::PRINT_GAME_SIMULATION_DEBUG_INFORMATION = true;
+
+  // Update current working directory
   num_args <= 0 ? init::updateWorkingDirectory(): init::updateWorkingDirectory(arguments[0]);
 
+  // param 1: (string) rng seed - default = load from system clock time
   init::initializeRNG();
 
-  init::updateMCTSParameters(0.15);
+  // param 1: (double) fraction of threads to use per MCTS - default = 100% usage
+  // param 2: (int) number of moves deep to search (MCTS) - default = 8 moves
+  // param 3: (int) number of search iterations (MCTS) - default = 125 iterations
+  init::updateMCTSParameters(0.15, 2, 125);
 
-  init::updateNetworkSettings(false);
-  init::updateTrainingParameters();
+  // param 1: (bool) load previous network from file - default = true
+  // param 2: (bool) save trained networks to files - default = true
+  // param 3: (string) file path to previous network - default = "network_dump/latest.txt"
+  init::updateNetworkSettings();
+  // param 1: (lambda) when to terminate program training - default = return true; = do not train
+  // param 2: (int) network training save/dropout interval - default = 20 iterations
+  // param 3: (double) ratio of boards from simulations to save - default = 100% saved
+  init::updateTrainingParameters(termination_condition, 100);
+  // for this ^^, remember that counter vars need to remain existent after setting this lambda
+  // ie make sure the counters aren't local variables or uNdEfInEd BeHaViOr....
+  if (!settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
+    std::cout << "Program Initialization Complete!" << std::endl << std::endl;
+}
+
+void training_helper(std::atomic_bool &done, const std::vector<std::string> &vec) {
+  network::train::train_network(vec);
+  done.store(true);
+}
+
+void simulation_helper(std::atomic_bool &done, std::vector<std::string> &vec, int num_game_sims) {
+  network::generate_training_cases(vec, game_count, num_game_sims);
+  done.store(true);
 }
 
 // The execute() method is the core of the entire program, where all of the independent
@@ -35,7 +71,40 @@ void initialize() {
 // There is also a planned UI which will allow users to select configurations while the
 // program is running. However, this is not a high-priority feature.
 void execute() {
+  int num_threads = (int) std::thread::hardware_concurrency() - 3;
+  int threads_per_sim = tree::MCTS::DEFAULT_NUM_THREADS + 2;
+  int num_game_sims = 0;
+  while (num_threads >= threads_per_sim) {
+    num_threads -= threads_per_sim;
+    ++num_game_sims;
+  }
 
+  std::vector<std::string> files;
+  for (int i = 0; i < 66; ++i)
+    files.push_back("board_" + std::to_string(i));
+
+  std::atomic_bool done1(false), done2(false);
+
+  std::cout << "Launching Network Trainer: " << files.size() << " preloaded files for training" << std::endl;
+  thread::create(training_helper, std::ref(done1), files);
+
+  std::cout << "Launching Game Simulator: " << num_game_sims << " simulations per cycle" << std::endl;
+  thread::create(simulation_helper, std::ref(done2), std::ref(files), num_game_sims);
+
+  std::cout << std::endl << "Training will complete after " << end_count << " simulation";
+  if (end_count != 1)
+    std::cout << "s";
+  std::cout << std::endl << std::endl;
+  thread::wait_for([&] { return done1 && done2; });
+
+  std::cout << "Program Execution Complete!!" << std::endl << std::endl;
+
+//  std::vector<std::string> cases;
+//  for (int i = 0; i < 66; ++i)
+//    cases.push_back("board_" + std::to_string(i));
+//  network::train::train_network(cases);
+
+//  game::run_game(player::PlayerType::HUMAN, player::PlayerType::MCTS, true);
 }
 
 // The terminate() method deletes any pointers, etc. and clears any containers.
@@ -46,7 +115,17 @@ void execute() {
 //
 // This method can be thought of as the inverse of the initialize() method.
 void terminate() {
+  std::cout << "Releasing remaining allocated memory..." << std::endl << std::endl;
   network::NetworkStorage::flushStorage(); // delete any stored networks
+}
+
+void printSpacing(int front, int end, std::ostream &out = std::cout) {
+  for (int i = 0; i < front; ++i)
+    out << "\n";
+  out << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-";
+  for (int i = 0; i < end; ++i)
+    out << "\n";
+  out.flush();
 }
 
 // The main() method is the main method from where the initialize(), execute(),
@@ -57,9 +136,24 @@ int main(int len, char **args) {
   num_args = len - 1;
 
   // initialize, run, and close program
-  initialize();
-  execute();
+  printSpacing(1, 2);
+  initialize([&] { return game_count >= end_count; });
+
+  printSpacing(0, 2);
+  if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION) {
+    std::cout << "PROGRAM INITIALIZATION VERIFICATION:" << "\n";
+    if (init::verify()) {
+      printSpacing(0, 2);
+      execute(); // execute iff initialization worked properly
+    } else
+      std::cout << std::endl;
+  } else if (init::verify())
+    execute(); // execute iff initialization worked properly
+
+  printSpacing(0, 2);
   terminate();
+
+  printSpacing(0, 1);
 
   // exit
   return 0;

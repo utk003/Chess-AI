@@ -60,6 +60,5 @@ void math::clamp(float &x, std::pair<float, float> range) {
 
 // true with probability p
 bool math::chance(double p) {
-  clamp(p, {0.0, 1.0}); // clamp p to [0.0, 1.0]
-  return random() < p;
+  return random() < p; // don't need to explicitly clamp p to [0.0, 1.0] b/c this will still work
 }

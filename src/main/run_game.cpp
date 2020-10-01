@@ -5,15 +5,6 @@
 #include "../graphics/opengl.h"
 #include "../util/thread_util.h"
 
-bool game::play_game(player::PlayerType white, player::PlayerType black, const std::string &default_board_file_path) {
-  if (!init::verify())
-    return false;
-
-  run_game(white, black, true, default_board_file_path);
-
-  return true;
-}
-
 game::GameResult game::run_game(player::PlayerType white, player::PlayerType black, bool run_graphics,
                                 const std::string &default_board_file_path) {
   auto *game = new game::Game(new game::Board(8, 8));

@@ -38,10 +38,6 @@ class Board : piece::PieceManager {
     [[nodiscard]] inline std::vector<piece::Piece *> pieces() const { return _pieces; }
 
     [[nodiscard]] inline piece::Piece *getPiece(int r, int c) const {
-      if (!isValidPosition(r, c)) {
-        DEBUG_ASSERT
-        return nullptr;
-      }
       return _pieces[locMap(r, c)];
     }
 
@@ -78,14 +74,16 @@ class Board : piece::PieceManager {
 
     [[nodiscard]] Board *clone() const;
 
-    void saveToFile(const std::string &fileName,
-                    const std::function<void(std::ofstream &)> &do_later = [](std::ofstream &out) -> void {});
-    void loadFromFile(const std::string &fileName,
+    void saveToFile(const std::string &file_path,
+                    const std::function<void(std::ofstream &)> &do_later = [](std::ofstream &out) -> void {},
+                    bool pad_file_path = true);
+    void loadFromFile(const std::string &file_path,
                       const std::function<void(std::ifstream &)> &do_later = [](std::ifstream &in) -> void {});
 
     [[nodiscard]] int move_count() const { return _move_count.operator int(); }
 
     double score(const std::function<double(piece::Piece *)> &piece_scorer) const;
+    double score(const std::function<double(piece::Piece *, int, int)> &piece_scorer) const;
 
   private:
     std::atomic_int _move_count{0};

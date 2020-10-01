@@ -8,10 +8,6 @@
 
 namespace game {
 
-bool play_game(player::PlayerType white = player::PlayerType::HUMAN,
-               player::PlayerType black = player::PlayerType::HUMAN,
-               const std::string &default_board_file_path = "assets/game_states/chess_default_start.txt");
-
 game::GameResult run_game(player::PlayerType white, player::PlayerType black, bool run_graphics = false,
                           const std::string &default_board_file_path = "assets/game_states/chess_default_start.txt");
 

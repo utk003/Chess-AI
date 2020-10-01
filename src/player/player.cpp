@@ -281,7 +281,7 @@ int player::AlphaBetaPlayer::currentBoardScore() {
   for (r = 0; r < 8; ++r)
     for (c = 0; c < 8; ++c) {
       piece = _simulation_board->getPiece(r, c);
-      temp = piece->type().minimaxValue(r, c, 7 * piece->color().isBlack());
+      temp = piece->type().minimaxValue(r, c, piece->color());
       if (piece->color() == _color)
         score += temp;
       else

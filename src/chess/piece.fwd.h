@@ -231,7 +231,8 @@ class PieceType {
       }
     }
 
-    constexpr int minimaxValue(int r, int c, int homeRow) const {
+    constexpr int minimaxValue(int r, int c, piece::PieceColor col) const {
+      int homeRow = 7 * col.isBlack();
       switch (_value) {
         case KING: // +10 if in home row
           return 100 + 10 * (r == homeRow);

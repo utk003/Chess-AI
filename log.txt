@@ -165,3 +165,10 @@ Restored 50 move stalemate to 50 moves.... end of game moves drawing out the gam
 Commit 16: September 21, 2020
 -----------------------------
 Major code cleanup/refactoring
+
+
+
+Commit 17: October 1, 2020
+--------------------------
+Finished changes from c16
+Program is now ready for training (again.....)
