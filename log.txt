@@ -171,5 +171,6 @@ Major code cleanup/refactoring
 Commit 17: October 1, 2020
 --------------------------
 Finished changes from c16
+Program is now ready for training (again.....)
 Add some pre-set training cases (will continue to add more)
 Update README slightly to explain how to use this repository
