@@ -174,3 +174,11 @@ Finished changes from c16
 Program is now ready for training (again.....)
 Add some pre-set training cases (will continue to add more)
 Update README slightly to explain how to use this repository
+
+
+
+Commit 18: November 8, 2020
+---------------------------
+Updated README.md
+Added license to all code files
+Slight refactor to code in main.cpp

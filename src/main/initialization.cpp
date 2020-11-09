@@ -1,3 +1,27 @@
+// ------------------------------------------------------------------------------ //
+// MIT License                                                                    //
+//                                                                                //
+// Copyright (c) 2020 Utkarsh Priyam                                              //
+//                                                                                //
+// Permission is hereby granted, free of charge, to any person obtaining a copy   //
+// of this software and associated documentation files (the "Software"), to deal  //
+// in the Software without restriction, including without limitation the rights   //
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell      //
+// copies of the Software, and to permit persons to whom the Software is          //
+// furnished to do so, subject to the following conditions:                       //
+//                                                                                //
+// The above copyright notice and this permission notice shall be included in all //
+// copies or substantial portions of the Software.                                //
+//                                                                                //
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR     //
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,       //
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE    //
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER         //
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  //
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  //
+// SOFTWARE.                                                                      //
+// ------------------------------------------------------------------------------ //
+
 #include "initialization.h"
 
 #include <filesystem>
@@ -6,9 +30,7 @@
 #  include <direct.h>
 #  define cd _chdir
 #else
-
 #  include <unistd.h>
-
 #  define cd chdir
 #endif
 
@@ -199,7 +221,7 @@ void init::updateTrainingParameters(const std::function<bool()> &termination_con
   settings::SIMULATION_BOARD_SAVE_PROCEDURE = [&](auto &vec, game::Board *b, double d) -> void {
     if (math::chance(ratio_of_training_boards_to_save)) {
       double bounded_mcts_result = 2.0 * d - 1.0;                       // transform from [0.0, 1.0] to [-1.0, 1.0]
-      math::clamp(bounded_mcts_result, {-1.0, 1.0});  // clamp result to [-1.0, 1.0]
+      math::clamp(bounded_mcts_result, {-1.0, 1.0});    // clamp result to [-1.0, 1.0]
       vec.emplace_back(b->clone(), bounded_mcts_result);                // store board AND result
     }
   };

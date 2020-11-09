@@ -1,3 +1,27 @@
+// ------------------------------------------------------------------------------ //
+// MIT License                                                                    //
+//                                                                                //
+// Copyright (c) 2020 Utkarsh Priyam                                              //
+//                                                                                //
+// Permission is hereby granted, free of charge, to any person obtaining a copy   //
+// of this software and associated documentation files (the "Software"), to deal  //
+// in the Software without restriction, including without limitation the rights   //
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell      //
+// copies of the Software, and to permit persons to whom the Software is          //
+// furnished to do so, subject to the following conditions:                       //
+//                                                                                //
+// The above copyright notice and this permission notice shall be included in all //
+// copies or substantial portions of the Software.                                //
+//                                                                                //
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR     //
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,       //
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE    //
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER         //
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  //
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  //
+// SOFTWARE.                                                                      //
+// ------------------------------------------------------------------------------ //
+
 #include "main/initialization.h"
 #include "main/run_game.h"
 #include "main/network/make_cases.h"
@@ -13,7 +37,7 @@ char **arguments;
 int num_args;
 
 // create termination lambda variables
-int game_count = 0, end_count = 0;
+int game_count = 0, end_count = 1000; // end_count = how many games to simulate for training before exiting the program
 
 // The initialize() method initializes all of the different modules of this program
 // and ensures that all necessary preconditions are met.
@@ -44,7 +68,7 @@ void initialize(const std::function<bool()> &termination_condition = [] { return
   // param 2: (int) network training save/dropout interval - default = 20 iterations
   // param 3: (double) ratio of boards from simulations to save - default = 100% saved
   init::updateTrainingParameters(termination_condition, 100);
-  // for this ^^, remember that counter vars need to remain existent after setting this lambda
+  // for this ^^ (lambda), remember that counter vars need to remain existent after this method's execution finishes
   // ie make sure the counters aren't local variables or uNdEfInEd BeHaViOr....
   if (!settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
     std::cout << "Program Initialization Complete!" << std::endl << std::endl;
@@ -60,17 +84,7 @@ void simulation_helper(std::atomic_bool &done, std::vector<std::string> &vec, in
   done.store(true);
 }
 
-// The execute() method is the core of the entire program, where all of the independent
-// functions provided in this program can be run. Specifically, the program can decide
-// to run training procedures or play an actual game between 2 human players, between
-// a human and a computer, or even between 2 computers!
-//
-// There is planned support for external (possibly command-line-based) modifiers which
-// will allow users to configure program usage at runtime rather than compile-time.
-//
-// There is also a planned UI which will allow users to select configurations while the
-// program is running. However, this is not a high-priority feature.
-void execute() {
+void execute_training() {
   int num_threads = (int) std::thread::hardware_concurrency() - 3;
   int threads_per_sim = tree::MCTS::DEFAULT_NUM_THREADS + 2;
   int num_game_sims = 0;
@@ -98,13 +112,28 @@ void execute() {
   thread::wait_for([&] { return done1 && done2; });
 
   std::cout << "Program Execution Complete!!" << std::endl << std::endl;
+}
 
-//  std::vector<std::string> cases;
-//  for (int i = 0; i < 66; ++i)
-//    cases.push_back("board_" + std::to_string(i));
-//  network::train::train_network(cases);
+void execute_gameplay(player::PlayerType white = player::PlayerType::HUMAN,
+                      player::PlayerType black = player::PlayerType::AI) {
+  std::cout << "Starting Game" << std::endl << std::endl;
+  game::run_game(white, black, true);
+  std::cout << "Program Execution Complete!!" << std::endl << std::endl;
+}
 
-//  game::run_game(player::PlayerType::HUMAN, player::PlayerType::MCTS, true);
+// The execute() method is the core of the entire program, where all of the independent
+// functions provided in this program can be run. Specifically, the program can decide
+// to run training procedures or play an actual game between 2 human players, between
+// a human and a computer, or even between 2 computers!
+//
+// There is planned support for external (possibly command-line-based) modifiers which
+// will allow users to configure program usage at runtime rather than compile-time.
+//
+// There is also a planned UI which will allow users to select configurations while the
+// program is running. However, this is not a high-priority feature.
+void execute() {
+//  execute_training();
+//  execute_gameplay(); // white, black
 }
 
 // The terminate() method deletes any pointers, etc. and clears any containers.
