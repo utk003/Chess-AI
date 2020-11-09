@@ -31,7 +31,7 @@ The source code for the UI system used in this project can be found in the "src/
 *TODO: A 3D graphics system is currently planned, but no work has been done for this so far.*
 
 ### The Non-Human Player Algorithms
-This project includes 6 different player options: the human player and 5 non-human player options. The game supports human vs human, human vs non-human, and non-human vs non-human games.
+This project includes 6 different player options: the human player and 5 non-human player types. The program supports human vs human, human vs non-human, and non-human vs non-human games.
 - The HUMAN player type is the only user-interactable type. Use this type in order to make your own moves. Any human-controlled moves can be made by clicking on the appropriate cells of the grid in the display.
 - The RANDOM player type is the simplest non-human player. It plays a random legal move on its turn, with all possible moves being equally likely.
 - The MINIMAX player type is the next non-human player type. It plays its move based on the [minimax](https://en.wikipedia.org/wiki/Minimax) algorithm.
@@ -55,7 +55,7 @@ Build/Run program
 All of the configurable options are in src/main.cpp, mostly in the first method initialize(...). All of them are detailed by names/comments, and you can leave them at the default values if you desire.
 
 Additionally, the execute() method in src/main.cpp is where you can specify running a game or training the network. Uncomment whichever process you wish to run.
-If you choose to run execute_gameplay(), specify what player types you wish to play with. By default, the program runs a human vs AI game.
+If you choose to run execute_gameplay(), specify what player types you wish to play with in the method arguments. By default, the method runs a human vs AI game.
 
 *TODO: An external, runtime-configurable, configuration file is planned.*
 
