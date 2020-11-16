@@ -34,11 +34,11 @@
 std::atomic_bool network::save_network(false);
 
 double get_overall_result(double mcts_result, double game_result, double scale = 4.0) { // TODO tweak weights/scale
-  static double mcts_weight = 5.0;
+  static double mcts_weight = 3.0;
   static double game_result_weight = 1.0;
-  static double weights_sum = mcts_weight + game_result_weight; // 6.0
+  static double weights_sum = mcts_weight + game_result_weight; // 4.0
 
-  return scale * (mcts_weight * mcts_result + game_result_weight * game_result) / weights_sum; // 5:1 weight
+  return scale * (mcts_weight * mcts_result + game_result_weight * game_result) / weights_sum; // 3:1 weight
 }
 
 long file_counter = 0L;

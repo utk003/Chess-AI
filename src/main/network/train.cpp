@@ -38,7 +38,7 @@ void network::train::train_network(const std::vector<std::string> &training_case
 
 void network::train::train_network(const std::vector<std::string> &training_case_files, Network *net,
                                    const std::function<bool()> &termination_condition) {
-  const int NUM_CASES_PER_DROPOUT = settings::GAMES_PER_NETWORK_SAVE;
+  const int NUM_CASES_PER_SAVE = settings::GAMES_PER_NETWORK_SAVE;
   const double LAMBDA_MIN = 0.0001, LAMBDA_MAX = 10.0, DEFAULT_LAMBDA = Optimizer::DEFAULT_INITIAL_LAMBDA;
 
   double lambda = DEFAULT_LAMBDA;
@@ -53,16 +53,16 @@ void network::train::train_network(const std::vector<std::string> &training_case
 
       if (lambda < LAMBDA_MIN || LAMBDA_MAX < lambda) {
         lambda = DEFAULT_LAMBDA;
-        case_counter = NUM_CASES_PER_DROPOUT;
+        Optimizer::dropout(net);
       }
-      if (++case_counter >= NUM_CASES_PER_DROPOUT) {
+      if (++case_counter >= NUM_CASES_PER_SAVE) {
         if (save_network) {
           save_network.store(false);
           network::NetworkStorage::saveNetwork();
         }
 
         case_counter = 0;
-        Optimizer::dropout(net);
+
       }
     } else
       thread::sleep_millis(1);
