@@ -22,6 +22,8 @@ The source code for this part of this project can be found in the "src/chess" di
 ### The UI
 The included user interface, which was implemented using [OpenGL](https://www.opengl.org), uses high quality chess piece graphics derived from their respective emoji, and it is additionally capable of displaying past moves, current move selections, and current legal moves and captures. The previous move is indicated by a green outline around the start and end squares, the currently selected squares are shown with an orange outline, and the currently legal moves and captures are shown with blue and red outlines, respectively.
 
+![UI Example Image](https://raw.githubusercontent.com/utk003/Chess-AI/master/assets/git%20readme%20image.png)
+
 The UI also supports various keyboard input options, which play important roles in gameplay functionality and additional display options.
 - Q, R, K, and B are the 4 keys necessary for pawn promotion. When your piece reaches the promotion rank, press the key corresponding to the piece to which you wish to promote.
 - Z is the undo button. Its current implementation skips back to the previous human move (if 2 non-human players are playing, it does nothing). *TODO: The program may crash if the undo button is used while a non-human player is calculating its next move.*
