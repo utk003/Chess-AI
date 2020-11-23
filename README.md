@@ -51,11 +51,9 @@ Lastly, the project includes all of the code necessary to train the network. It 
 The source code for this part of this project can be found in the "src/main/network" directory, in the make_cases.\* and train.\* files, and anyone can use it for other projects as outlined by the license.
 
 ## Usage Intructions
-Clone repository
-
-Configure parameters in main.cpp (see Configuration Options)
-
-Build/Run program
+1. Clone repository
+2. Configure parameters in main.cpp (see Configuration Options)
+3. Build/Run program
 
 ### Configuration Options
 All of the configurable options are in src/main.cpp, mostly in the first method initialize(...). All of them are detailed by names/comments, and you can leave them at the default values if you desire.
