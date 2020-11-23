@@ -52,7 +52,9 @@ The source code for this part of this project can be found in the "src/main/netw
 
 ## Usage Intructions
 Clone repository
+
 Configure parameters in main.cpp (see Configuration Options)
+
 Build/Run program
 
 ### Configuration Options
