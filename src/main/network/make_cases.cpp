@@ -78,6 +78,7 @@ void network::generate_training_cases(const std::function<bool()> &termination_c
                                       std::vector<std::string> &file_paths,
                                       int &sim_count, int num_simulations) {
   network::NetworkStorage::setTestCaseSelector([&](game::Board *b, double d) -> void {
+    std::cout << "saving board step 1" << std::endl; // TODO remove - debugging
     settings::SIMULATION_BOARD_SAVE_PROCEDURE(training_boards, b, d);
   });
 

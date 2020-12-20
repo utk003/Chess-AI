@@ -370,17 +370,16 @@ void network::NetworkStorage::flushStorage() {
 }
 
 void network::NetworkStorage::saveBoard(const game::Board *board, const tree::Node *node) {
-  std::cout << "Saving board"; // TODO remove - debugging
+  std::cout << "Saving board" << std::endl; // TODO remove - debugging
   if (_network_training_case) {
-    std::cout << ": actually saved"; // TODO remove - debugging
+    std::cout << ": actually saved" << std::endl; // TODO remove - debugging
     game::Board *board_copy = board->clone();
     _network_training_case(board_copy, node->value());
     delete board_copy;
   }
-  std::cout << std::endl; // TODO remove - debugging
 }
-void network::NetworkStorage::setTestCaseSelector(std::function<void(game::Board *, double)> selector) {
-  _network_training_case = std::move(selector);
+void network::NetworkStorage::setTestCaseSelector(const std::function<void(game::Board *, double)> &selector) {
+  _network_training_case = selector;
 }
 
 // Network to/from iostream
