@@ -38,7 +38,7 @@ int num_args;
 
 // create termination lambda variables
 int game_count = 0, end_count = 1; // end_count = how many games to simulate for training before exiting the program
-// TODO end_count = 100 - debugging
+// TODO end_count = 10000 - debugging
 
 // The initialize() method initializes all of the different modules of this program
 // and ensures that all necessary preconditions are met.
@@ -59,7 +59,7 @@ void initialize(const std::function<bool()> &termination_condition = [] { return
   // param 1: (double) fraction of threads to use per MCTS - default = 100% usage
   // param 2: (int) number of moves deep to search (MCTS) - default = 8 moves
   // param 3: (int) number of search iterations (MCTS) - default = 125 iterations
-  init::updateMCTSParameters(0.15, 8, 125);
+  init::updateMCTSParameters(0.15, 2, 25); // TODO (0.15, 8, 150) - debugging
 
   // param 1: (bool) load previous network from file - default = true
   // param 2: (bool) save trained networks to files - default = true

@@ -167,7 +167,7 @@ class NetworkStorage : NetworkManager {
     static void flushStorage();
 
     static void saveBoard(const game::Board *board, const tree::Node *node);
-    static void setTestCaseSelector(const std::function<void(game::Board *, double)> &selector);
+    static void setTestCaseSelector(std::function<void(game::Board *, double)> selector);
 
     static bool SAVE_NETWORKS;
 
