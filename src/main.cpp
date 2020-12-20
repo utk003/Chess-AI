@@ -37,7 +37,7 @@ char **arguments;
 int num_args;
 
 // create termination lambda variables
-int game_count = 0, end_count = 10000; // end_count = how many games to simulate for training before exiting the program
+int game_count = 0, end_count = 500; // end_count = how many games to simulate for training before exiting the program
 
 // The initialize() method initializes all of the different modules of this program
 // and ensures that all necessary preconditions are met.

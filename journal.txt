@@ -190,3 +190,11 @@ Commit 19: November 15, 2020
 Increased training depth/parameters
 Deeper searches should result in more accurate training results (albeit much, much, much, much slower - on the order of 1000- or 10k-fold slower)
 Effectiveness of changes to be seen
+
+
+
+Commit 20.*: December 19, 2020
+------------------------------
+The computer the network is training on can't handle the deeper searches -> reverted to weaker search depths
+An issue with a lambda capture was preventing proper network training... it was found and is now fixed
+Training can now begin
