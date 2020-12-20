@@ -45,6 +45,6 @@ elseif (UNIX)
 endif ()
 
 # Debug/Release Macros
-if (CMAKE_BUILD_TYPE MATCHES Debug)
+#if (CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(Chess_AI PUBLIC DEBUG)
-endif ()
+#endif ()

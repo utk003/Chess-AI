@@ -46,6 +46,8 @@ void run_simulation_threaded(const int ITERATION_INDEX, std::vector<std::string>
                              std::atomic_bool &is_complete) {
   game::GameResult result = game::run_game(player::PlayerType::AI, player::PlayerType::AI);
 
+  std::cout << "Game over" << std::endl; // TODO remove - debugging
+  std::cout << network::training_boards.size() << std::endl; // TODO remove - debugging
   // Update training case target value
   for (auto &pair : network::training_boards) {
     pair.second = get_overall_result(pair.second, result.evaluate()); // update case weight
@@ -53,6 +55,7 @@ void run_simulation_threaded(const int ITERATION_INDEX, std::vector<std::string>
     delete pair.first;
   }
   network::training_boards.clear();
+  std::cout << std::endl; // TODO remove - debugging
 
   if (settings::PRINT_GAME_SIMULATION_DEBUG_INFORMATION) {
     // print iteration completion time
@@ -113,8 +116,11 @@ void network::generate_training_cases(const std::function<bool()> &termination_c
 std::string
 network::save_training_case(const std::string &case_index, const std::pair<game::Board *, double> &training_case) {
   std::string file_path = "training_cases/case_" + case_index + ".txt";
+  std::cout << "saved file: " << file_path << std::endl; // TODO remove - debugging
   training_case.first->saveToFile(
-    file_path, [&](std::ostream &out) -> void { out << string::from_double(training_case.second) << std::endl; }, false
+    file_path,
+    [&](std::ostream &out) -> void { out << string::from_double(training_case.second) << std::endl; },
+    false
   );
   return file_path;
 }

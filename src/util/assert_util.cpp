@@ -25,6 +25,7 @@
 #ifdef DEBUG
 
 #include "assert_util.h"
+#include <cstdlib>
 
 #ifndef _WIN32
 #  include <execinfo.h>

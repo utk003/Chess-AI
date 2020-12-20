@@ -223,6 +223,7 @@ void init::updateTrainingParameters(const std::function<bool()> &termination_con
       double bounded_mcts_result = 2.0 * d - 1.0;                       // transform from [0.0, 1.0] to [-1.0, 1.0]
       math::clamp(bounded_mcts_result, {-1.0, 1.0});    // clamp result to [-1.0, 1.0]
       vec.emplace_back(b->clone(), bounded_mcts_result);                // store board AND result
+      std::cout << vec.size() << std::endl; // TODO remove - debugging
     }
   };
   if (settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)

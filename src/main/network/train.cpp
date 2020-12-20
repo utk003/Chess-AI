@@ -62,7 +62,6 @@ void network::train::train_network(const std::vector<std::string> &training_case
         }
 
         case_counter = 0;
-
       }
     } else
       thread::sleep_millis(1);
