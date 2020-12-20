@@ -81,7 +81,5 @@ void math::clamp(float &x, std::pair<float, float> range) {
 
 // true with probability p
 bool math::chance(double p) {
-  double rand = random();
-  std::cout << rand << " for target " << p << std::endl; // TODO remove - debugging
-  return rand < p; // don't need to explicitly clamp p to [0.0, 1.0] b/c this will still work
+  return random() < p; // don't need to explicitly clamp p to [0.0, 1.0] b/c this will still work
 }

@@ -370,9 +370,7 @@ void network::NetworkStorage::flushStorage() {
 }
 
 void network::NetworkStorage::saveBoard(const game::Board *board, const tree::Node *node) {
-  std::cout << "Saving board" << std::endl; // TODO remove - debugging
   if (_network_training_case) {
-    std::cout << ": actually saved" << std::endl; // TODO remove - debugging
     game::Board *board_copy = board->clone();
     _network_training_case(board_copy, node->value());
     delete board_copy;
