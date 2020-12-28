@@ -58,7 +58,7 @@ void initialize(const std::function<bool()> &termination_condition = [] { return
   // param 1: (double) fraction of threads to use per MCTS - default = 100% usage
   // param 2: (int) number of moves deep to search (MCTS) - default = 8 moves
   // param 3: (int) number of search iterations (MCTS) - default = 125 iterations
-  init::updateMCTSParameters(0.15, 8, 150);
+  init::updateMCTSParameters(0.40, 8, 150);
 
   // param 1: (bool) load previous network from file - default = true
   // param 2: (bool) save trained networks to files - default = true
@@ -67,7 +67,7 @@ void initialize(const std::function<bool()> &termination_condition = [] { return
   // param 1: (lambda) when to terminate program training - default = return true; = do not train
   // param 2: (int) network training save interval - default = 20 iterations
   // param 3: (double) ratio of boards from simulations to save - default = 100% saved
-  init::updateTrainingParameters(termination_condition, 100);
+  init::updateTrainingParameters(termination_condition, 100, 0.1);
   // for this ^^ (lambda), remember that counter vars need to remain existent after this method's execution finishes
   // ie make sure the counters aren't local variables or uNdEfInEd BeHaViOr....
   if (!settings::PRINT_INITIALIZATION_DEBUG_INFORMATION)
